@@ -2,7 +2,6 @@
 
 <div align="center">
 
-![项目状态](https://img.shields.io/badge/status-开发中-blue)
 ![Vue版本](https://img.shields.io/badge/Vue-3.5.18-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
@@ -353,17 +352,7 @@ go run main.go
 
 本项目采用 [MIT](LICENSE) 许可证。
 
----
 
-## 👥 联系方式
-
-如有问题或建议，欢迎通过以下方式联系：
-
-- **Issue**: [GitHub Issues](https://github.com/your-username/medical-data-traceability/issues)
-- **Email**: dev@medical-platform.com
-- **文档**: [在线文档](https://docs.medical-platform.com)
-
----
 
 ## 🙏 致谢
 
