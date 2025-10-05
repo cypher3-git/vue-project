@@ -1,4 +1,0 @@
-cd /home/lee/project
-git add -A
-git commit -m "feat: xxx"
-git push
