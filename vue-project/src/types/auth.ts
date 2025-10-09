@@ -37,9 +37,9 @@ export interface PatientUser extends User {
 // 医生用户扩展信息
 export interface DoctorUser extends User {
   role: 'doctor'
-  licenseNumber: string
-  hospital: string
-  department: string
+  licenseNumber?: string // 可选，注册时不收集
+  hospital?: string // 可选，注册时不收集
+  department?: string // 可选，注册时不收集
   title?: string // 职称
   specialties?: string[] // 专业领域
   experience?: number // 从业年限
@@ -81,13 +81,10 @@ export interface PatientRegisterData extends RegisterDataBase {
   role: 'patient'
 }
 
-// 医生注册数据
+// 医生注册数据（需要额外填写科室）
 export interface DoctorRegisterData extends RegisterDataBase {
   role: 'doctor'
-  licenseNumber: string
-  hospital: string
-  department: string
-  title?: string
+  department: string // 科室（必填）
 }
 
 // 联合注册数据类型

@@ -82,12 +82,12 @@ type PatientUser struct {
 ```go
 type DoctorUser struct {
     UserID         string    `json:"userId" gorm:"primaryKey"`
-    LicenseNumber  string    `json:"licenseNumber" gorm:"unique;not null"`
-    Hospital       string    `json:"hospital" gorm:"not null"`
-    Department     string    `json:"department" gorm:"not null"`
-    Title          string    `json:"title,omitempty"`       // 职称
-    Specialties    string    `json:"specialties,omitempty"` // JSON array
-    Experience     int       `json:"experience,omitempty"`  // 从业年限
+    Department     string    `json:"department" gorm:"not null"`             // 科室，注册时必填
+    LicenseNumber  string    `json:"licenseNumber,omitempty" gorm:"unique"`  // 可选，注册后补充
+    Hospital       string    `json:"hospital,omitempty"`                     // 可选，注册后补充
+    Title          string    `json:"title,omitempty"`                        // 职称
+    Specialties    string    `json:"specialties,omitempty"`                  // JSON array
+    Experience     int       `json:"experience,omitempty"`                   // 从业年限
     Qualification  string    `json:"qualification,omitempty"`
     IsVerified     bool      `json:"isVerified" gorm:"default:false"`
     VerifiedAt     time.Time `json:"verifiedAt,omitempty"`
@@ -95,6 +95,8 @@ type DoctorUser struct {
     UpdatedAt      time.Time `json:"updatedAt"`
 }
 ```
+
+**注意**: 医生注册时需要选择科室（必填），其他信息如医师执业证号、医院名称等可在注册后通过个人资料更新接口补充。
 
 ### 2.4 医疗文件模型 (MedicalFile)
 
@@ -250,20 +252,19 @@ type VerificationCode struct {
 }
 ```
 
-医生注册:
+医生注册（需要额外填写科室）:
 ```json
 {
   "phone": "13800138001",
   "code": "123456",
   "idCard": "330101198001011234",
   "role": "doctor",
-  "licenseNumber": "DOC123456",
-  "hospital": "浙江大学医学院附属第一医院",
   "department": "心血管科",
-  "title": "主任医师",
   "agreeToTerms": true
 }
 ```
+
+**注意**: 医生注册时需要选择科室，其他信息（如医师执业证号、医院名称等）可在注册后通过个人资料更新接口补充。
 
 **响应**:
 ```json

@@ -10,6 +10,7 @@
       label-width="0"
       size="large"
       class="login-form"
+      :validate-on-rule-change="false"
       @keyup.enter="handleLogin"
     >
       <!-- 身份选择 -->
@@ -96,7 +97,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { 
   UserFilled, 
@@ -132,21 +133,37 @@ const codeCountdown = ref(0)
 const isCodeSending = ref(false)
 let countdownTimer: number | null = null
 
+// 控制是否启用验证
+const enableValidation = ref(false)
+
 // 表单验证规则
-const loginRules: FormRules = {
-  phone: [
-    { required: true, message: '请输入手机号', trigger: 'blur' },
-    {
-      pattern: /^1[3-9]\d{9}$/,
-      message: '请输入正确的手机号',
-      trigger: 'blur'
-    }
-  ],
-  code: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
-    { len: 6, message: '验证码长度为6位', trigger: 'blur' }
-  ]
-}
+const loginRules = computed<FormRules>(() => {
+  // 如果未启用验证，返回空规则
+  if (!enableValidation.value) {
+    return {}
+  }
+  
+  return {
+    phone: [
+      { required: true, message: '请输入手机号' },
+      {
+        pattern: /^1[3-9]\d{9}$/,
+        message: '请输入正确的手机号'
+      }
+    ],
+    code: [
+      { required: true, message: '请输入验证码' },
+      { len: 6, message: '验证码长度为6位' }
+    ]
+  }
+})
+
+// 监听角色变化，清除表单验证状态
+watch(() => loginForm.role, () => {
+  // 禁用验证并清除所有表单项的验证状态
+  enableValidation.value = false
+  loginFormRef.value?.clearValidate()
+})
 
 // 发送验证码
 const sendCode = async () => {
@@ -199,6 +216,12 @@ const startCountdown = () => {
 // 处理登录
 const handleLogin = async () => {
   if (!loginFormRef.value) return
+  
+  // 启用验证
+  enableValidation.value = true
+  
+  // 等待下一个 tick 确保规则已更新
+  await new Promise(resolve => setTimeout(resolve, 0))
   
   try {
     await loginFormRef.value.validate()
@@ -269,6 +292,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .login-view {
   width: 100%;
+  user-select: none;
 }
 
 .form-title {
@@ -312,6 +336,11 @@ onBeforeUnmount(() => {
 /* 表单样式 */
 .login-form {
   width: 100%;
+}
+
+/* 允许输入框内文本选择 */
+.form-input :deep(input) {
+  user-select: text;
 }
 
 .form-input {

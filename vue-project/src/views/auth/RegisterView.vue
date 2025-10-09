@@ -10,6 +10,7 @@
       label-width="0"
       class="register-form"
       size="default"
+      :validate-on-rule-change="false"
     >
       <!-- 身份选择 -->
       <div class="role-selection">
@@ -79,64 +80,44 @@
         </el-input>
       </el-form-item>
 
-      <!-- 医生专属字段 -->
-      <template v-if="registerForm.role === 'doctor'">
-        <!-- 医师执业证号 -->
-        <el-form-item prop="licenseNumber">
-          <el-input
-            v-model="registerForm.licenseNumber"
-            placeholder="请输入医师执业证号"
-            clearable
-            class="form-input"
-          >
-            <template #prefix>
-              <el-icon><Document /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <!-- 医院名称 -->
-        <el-form-item prop="hospital">
-          <el-input
-            v-model="registerForm.hospital"
-            placeholder="请输入医院名称"
-            clearable
-            class="form-input"
-          >
-            <template #prefix>
-              <el-icon><OfficeBuilding /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <!-- 科室 -->
-        <el-form-item prop="department">
-          <el-input
-            v-model="registerForm.department"
-            placeholder="请输入科室"
-            clearable
-            class="form-input"
-          >
-            <template #prefix>
-              <el-icon><Odometer /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-
-        <!-- 职称（可选） -->
-        <el-form-item prop="title">
-          <el-input
-            v-model="registerForm.title"
-            placeholder="请输入职称（选填）"
-            clearable
-            class="form-input"
-          >
-            <template #prefix>
-              <el-icon><Medal /></el-icon>
-            </template>
-          </el-input>
-        </el-form-item>
-      </template>
+      <!-- 医生科室选择 -->
+      <el-form-item v-if="registerForm.role === 'doctor'" prop="department">
+        <el-select
+          v-model="registerForm.department"
+          placeholder="请选择科室"
+          clearable
+          class="form-input"
+          filterable
+        >
+          <template #prefix>
+            <el-icon><OfficeBuilding /></el-icon>
+          </template>
+          <el-option label="内科" value="内科" />
+          <el-option label="外科" value="外科" />
+          <el-option label="儿科" value="儿科" />
+          <el-option label="妇产科" value="妇产科" />
+          <el-option label="心血管科" value="心血管科" />
+          <el-option label="神经内科" value="神经内科" />
+          <el-option label="神经外科" value="神经外科" />
+          <el-option label="骨科" value="骨科" />
+          <el-option label="呼吸科" value="呼吸科" />
+          <el-option label="消化科" value="消化科" />
+          <el-option label="肾内科" value="肾内科" />
+          <el-option label="内分泌科" value="内分泌科" />
+          <el-option label="血液科" value="血液科" />
+          <el-option label="肿瘤科" value="肿瘤科" />
+          <el-option label="皮肤科" value="皮肤科" />
+          <el-option label="眼科" value="眼科" />
+          <el-option label="耳鼻喉科" value="耳鼻喉科" />
+          <el-option label="口腔科" value="口腔科" />
+          <el-option label="中医科" value="中医科" />
+          <el-option label="康复科" value="康复科" />
+          <el-option label="麻醉科" value="麻醉科" />
+          <el-option label="急诊科" value="急诊科" />
+          <el-option label="ICU" value="ICU" />
+          <el-option label="其他科室" value="其他科室" />
+        </el-select>
+      </el-form-item>
 
       <!-- 协议同意 -->
       <el-form-item prop="agreeToTerms">
@@ -176,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   UserFilled, 
@@ -184,10 +165,7 @@ import {
   Phone, 
   CreditCard, 
   Key,
-  Document,
-  OfficeBuilding,
-  Odometer,
-  Medal
+  OfficeBuilding
 } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
@@ -213,31 +191,34 @@ const registerForm = reactive({
   code: '',
   role: 'patient' as UserRole,
   agreeToTerms: false,
-  // 医生专属字段
-  licenseNumber: '',
-  hospital: '',
-  department: '',
-  title: ''
+  department: '' // 医生科室
 })
+
+// 控制是否启用验证
+const enableValidation = ref(false)
 
 // 动态表单验证规则
 const registerRules = computed<FormRules>(() => {
+  // 如果未启用验证，返回空规则
+  if (!enableValidation.value) {
+    return {}
+  }
+  
   const baseRules: FormRules = {
     phone: [
-      { required: true, message: '请输入手机号码', trigger: 'blur' },
-      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+      { required: true, message: '请输入手机号码' },
+      { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码' }
     ],
     idCard: [
-      { required: true, message: '请输入身份证号', trigger: 'blur' },
+      { required: true, message: '请输入身份证号' },
       { 
         pattern: /^[1-9]\d{5}(18|19|20)\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$/, 
-        message: '请输入正确的身份证号', 
-        trigger: 'blur' 
+        message: '请输入正确的身份证号'
       }
     ],
     code: [
-      { required: true, message: '请输入短信验证码', trigger: 'blur' },
-      { pattern: /^\d{6}$/, message: '验证码为6位数字', trigger: 'blur' }
+      { required: true, message: '请输入短信验证码' },
+      { pattern: /^\d{6}$/, message: '验证码为6位数字' }
     ],
     agreeToTerms: [
       {
@@ -247,35 +228,33 @@ const registerRules = computed<FormRules>(() => {
           } else {
             callback()
           }
-        },
-        trigger: 'change'
+        }
       }
     ]
   }
 
-  // 如果是医生角色，添加医生专属字段验证
+  // 如果是医生角色，添加科室验证规则
   if (registerForm.role === 'doctor') {
     return {
       ...baseRules,
-      licenseNumber: [
-        { required: true, message: '请输入医师执业证号', trigger: 'blur' },
-        { min: 6, message: '医师执业证号至少6位', trigger: 'blur' }
-      ],
-      hospital: [
-        { required: true, message: '请输入医院名称', trigger: 'blur' },
-        { min: 2, message: '医院名称至少2个字符', trigger: 'blur' }
-      ],
       department: [
-        { required: true, message: '请输入科室', trigger: 'blur' },
-        { min: 2, message: '科室名称至少2个字符', trigger: 'blur' }
-      ],
-      title: [
-        { required: false, message: '请输入职称', trigger: 'blur' }
+        { required: true, message: '请选择科室' }
       ]
     }
   }
 
   return baseRules
+})
+
+// 监听角色变化，清除表单验证状态
+watch(() => registerForm.role, (newRole) => {
+  // 禁用验证并清除所有表单项的验证状态
+  enableValidation.value = false
+  registerFormRef.value?.clearValidate()
+  // 清空科室选择
+  if (newRole === 'patient') {
+    registerForm.department = ''
+  }
 })
 
 // 发送短信验证码
@@ -328,6 +307,12 @@ const startCountdown = () => {
 const handleRegister = async () => {
   if (!registerFormRef.value) return
   
+  // 启用验证
+  enableValidation.value = true
+  
+  // 等待下一个 tick 确保规则已更新
+  await new Promise(resolve => setTimeout(resolve, 0))
+  
   try {
     await registerFormRef.value.validate()
     
@@ -348,10 +333,7 @@ const handleRegister = async () => {
         idCard: registerForm.idCard,
         code: registerForm.code,
         role: 'doctor',
-        licenseNumber: registerForm.licenseNumber,
-        hospital: registerForm.hospital,
         department: registerForm.department,
-        title: registerForm.title || undefined,
         agreeToTerms: registerForm.agreeToTerms
       }
     }
@@ -368,17 +350,16 @@ const handleRegister = async () => {
 
 // 重置表单
 const resetForm = () => {
+  enableValidation.value = false
   registerFormRef.value?.resetFields()
+  registerFormRef.value?.clearValidate()
   Object.assign(registerForm, {
     phone: '',
     idCard: '',
     code: '',
     role: 'patient' as UserRole,
     agreeToTerms: false,
-    licenseNumber: '',
-    hospital: '',
-    department: '',
-    title: ''
+    department: ''
   })
 }
 
@@ -418,6 +399,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .register-view {
   width: 100%;
+  user-select: none;
 }
 
 .form-title {
@@ -465,6 +447,11 @@ onBeforeUnmount(() => {
 /* 表单样式 */
 .register-form {
   width: 100%;
+}
+
+/* 允许输入框内文本选择 */
+.form-input :deep(input) {
+  user-select: text;
 }
 
 .form-input {
