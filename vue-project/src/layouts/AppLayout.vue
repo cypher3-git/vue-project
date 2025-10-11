@@ -70,12 +70,9 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { 
   ArrowDown, 
-  Odometer, 
   FolderOpened, 
   Share, 
-  View, 
-  Monitor, 
-  UserFilled
+  View
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -96,37 +93,27 @@ const menuItems = computed((): MenuItem[] => {
   if (userStore.user?.role === 'patient') {
     return [
       {
-        path: '/patient/dashboard',
-        title: '仪表板',
-        icon: Odometer
-      },
-      {
         path: '/patient/data',
         title: '我的数据',
         icon: FolderOpened
       },
       {
-        path: '/patient/share',
-        title: '分享管理',
-        icon: Share
-      },
-      {
         path: '/patient/access',
         title: '访问记录',
         icon: View
+      },
+      {
+        path: '/patient/authorization',
+        title: '授权管理',
+        icon: Share
       }
     ]
   } else if (userStore.user?.role === 'doctor') {
     return [
       {
-        path: '/doctor/dashboard',
-        title: '工作台',
-        icon: Monitor
-      },
-      {
-        path: '/doctor/patients',
-        title: '患者管理',
-        icon: UserFilled
+        path: '/doctor/data',
+        title: '数据管理',
+        icon: FolderOpened
       }
     ]
   }
@@ -162,6 +149,37 @@ const handleCommand = (command: string) => {
 <style scoped>
 .app-layout {
   height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 移除所有可点击元素的焦点轮廓 */
+.app-layout :deep(button),
+.app-layout :deep(.el-button),
+.app-layout :deep(.el-menu-item),
+.app-layout :deep(.el-sub-menu__title),
+.app-layout :deep(.el-dropdown),
+.app-layout :deep(.el-avatar) {
+  outline: none;
+}
+
+/* 移除焦点时的默认轮廓 */
+.app-layout :deep(button:focus),
+.app-layout :deep(.el-button:focus),
+.app-layout :deep(.el-menu-item:focus),
+.app-layout :deep(.el-sub-menu__title:focus),
+.app-layout :deep(.el-dropdown:focus) {
+  outline: none;
+}
+
+/* 为键盘用户保留焦点指示 */
+.app-layout :deep(button:focus-visible),
+.app-layout :deep(.el-button:focus-visible),
+.app-layout :deep(.el-menu-item:focus-visible) {
+  outline: 2px solid #4dd0e1;
+  outline-offset: 2px;
 }
 
 .app-header {
@@ -180,6 +198,10 @@ const handleCommand = (command: string) => {
   font-weight: 600;
   margin: 0;
   text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .header-right {
@@ -195,16 +217,29 @@ const handleCommand = (command: string) => {
   padding: 8px 12px;
   border-radius: 6px;
   transition: all 0.2s;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  outline: none;
 }
 
 .user-info:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.user-info:focus {
+  outline: none;
+}
+
 .username {
   font-size: 16px;
   color: #ffffff;
   font-weight: 500;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .app-sidebar {
@@ -234,9 +269,36 @@ const handleCommand = (command: string) => {
   height: 56px !important;
   line-height: 56px !important;
   font-size: 16px;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
 }
 
 :deep(.el-menu-item i), :deep(.el-sub-menu .el-sub-menu__title i) {
   font-size: 18px;
+}
+
+/* 确保菜单文字不可选择 */
+:deep(.el-menu-item span),
+:deep(.el-sub-menu__title span),
+:deep(.el-icon) {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* 移除菜单项的焦点轮廓 */
+:deep(.el-menu-item:focus),
+:deep(.el-sub-menu__title:focus) {
+  outline: none !important;
+  background-color: transparent !important;
+}
+
+/* 鼠标悬停效果优化 */
+:deep(.el-menu-item:hover),
+:deep(.el-sub-menu__title:hover) {
+  cursor: pointer;
 }
 </style>

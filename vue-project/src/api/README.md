@@ -112,7 +112,7 @@ src/api/
 - `accessPatientFile()` - 访问患者文件
 - `downloadSharedFile()` - 下载共享文件
 - `getAccessHistory()` - 获取访问历史
-- `getDashboardStatistics()` - 获取工作台统计数据
+- `getDoctorStatistics()` - 获取医生端统计数据
 - `addPatientNote()` - 添加患者备注
 - `getPatientNotes()` - 获取患者备注
 - `toggleFavoritePatient()` - 标记常用患者
@@ -123,7 +123,6 @@ src/api/
 患者端专用的数据管理和权限控制功能。
 
 ### 主要接口：
-- `getDashboardStatistics()` - 获取仪表板统计数据
 - `getFileStatistics()` - 获取文件统计信息
 - `getPermissionRequests()` - 获取权限申请列表
 - `processPermissionRequest()` - 审批权限申请

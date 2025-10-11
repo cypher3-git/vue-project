@@ -241,7 +241,7 @@ const handleLogin = async () => {
 
 // 获取默认重定向路径
 const getDefaultRedirectPath = (): string => {
-  return loginForm.role === 'patient' ? '/patient/dashboard' : '/doctor/dashboard'
+  return loginForm.role === 'patient' ? '/patient/data' : '/doctor/data'
 }
 
 // 填充演示账户（仅开发环境）
@@ -269,8 +269,8 @@ const fillDemoAccount = async (role: UserRole) => {
     authStore.user = mockUser
     localStorage.setItem('token', mockToken)
     
-    // 登录成功，跳转到对应的仪表板
-    const redirectPath = role === 'patient' ? '/patient/dashboard' : '/doctor/dashboard'
+    // 登录成功，跳转到对应的页面
+    const redirectPath = role === 'patient' ? '/patient/data' : '/doctor/data'
     ElMessage.success(`${role === 'patient' ? '患者' : '医生'}演示登录成功！`)
     router.push(redirectPath)
     

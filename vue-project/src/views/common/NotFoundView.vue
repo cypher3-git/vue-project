@@ -23,7 +23,7 @@ const authStore = useAuthStore()
 
 const goHome = () => {
   if (authStore.isAuthenticated) {
-    const homePath = authStore.user?.role === 'patient' ? '/patient/dashboard' : '/doctor/dashboard'
+    const homePath = authStore.user?.role === 'patient' ? '/patient/data' : '/doctor/data'
     router.push(homePath)
   } else {
     router.push('/auth/login')

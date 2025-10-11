@@ -575,6 +575,45 @@ onMounted(async () => {
 .access-records {
   padding: 24px;
   background: #f8fafc;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 允许输入框和文本区域内文本选择 */
+.access-records :deep(input),
+.access-records :deep(textarea),
+.access-records :deep(.el-input__inner),
+.access-records :deep(.el-textarea__inner) {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* 移除所有可点击元素的焦点轮廓 */
+.access-records :deep(button),
+.access-records :deep(.el-button),
+.access-records :deep(.el-tag),
+.access-records :deep(.el-select),
+.access-records :deep(.el-radio),
+.access-records :deep(.el-checkbox) {
+  outline: none;
+}
+
+/* 移除焦点时的默认轮廓 */
+.access-records :deep(button:focus),
+.access-records :deep(.el-button:focus),
+.access-records :deep(.el-tag:focus) {
+  outline: none;
+}
+
+/* 为键盘用户保留焦点指示 */
+.access-records :deep(button:focus-visible),
+.access-records :deep(.el-button:focus-visible) {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
 }
 
 /* 页面头部 */

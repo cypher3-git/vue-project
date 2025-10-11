@@ -8,8 +8,12 @@ import type { ApiResponse, PaginatedData } from '@/types/auth'
 import type { 
   MedicalFile,
   ShareRecord,
-  AccessRecord 
+  AccessRecord,
+  CreateAuthorizationRequest,
+  AuthorizationRequest,
+  DataAuthorizationStatus
 } from '@/types/medicalData'
+import { mockService } from '@/mock/mockService'
 
 // 患者基本信息
 export interface PatientInfo {
@@ -64,6 +68,10 @@ export const getPatientList = async (params?: {
   page?: number
   pageSize?: number
 }): Promise<ApiResponse<PaginatedData<PatientInfo>>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getDoctorPatients(params)
+  if (mockResponse) return mockResponse as any
+  
   return request.get('/doctor/patients', { params })
 }
 
@@ -102,6 +110,10 @@ export const getPatientFiles = async (
     pageSize?: number
   }
 ): Promise<ApiResponse<PaginatedData<MedicalFile>>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getDoctorPatientFiles(patientId, params)
+  if (mockResponse) return mockResponse as any
+  
   return request.get(`/doctor/patients/${patientId}/files`, { params })
 }
 
@@ -224,28 +236,11 @@ export const getAccessHistory = async (params?: {
   page?: number
   pageSize?: number
 }): Promise<ApiResponse<PaginatedData<AccessRecord>>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getDoctorAccessHistory(params)
+  if (mockResponse) return mockResponse as any
+  
   return request.get('/doctor/access-history', { params })
-}
-
-/**
- * 获取医生工作台统计数据
- * @returns 统计数据
- */
-export const getDashboardStatistics = async (): Promise<ApiResponse<{
-  totalPatients: number
-  activeShares: number
-  pendingRequests: number
-  todayAccess: number
-  recentPatients: PatientInfo[]
-  recentShares: ShareRecord[]
-  recentAccess: AccessRecord[]
-  monthlyTrend: Array<{
-    date: string
-    accessCount: number
-    patientCount: number
-  }>
-}>> => {
-  return request.get('/doctor/dashboard/statistics')
 }
 
 /**
@@ -296,6 +291,74 @@ export const getFavoritePatients = async (): Promise<ApiResponse<PatientInfo[]>>
   return request.get('/doctor/patients/favorites')
 }
 
+/**
+ * 获取医生端统计数据
+ * @returns 统计数据
+ */
+export const getDoctorStatistics = async (): Promise<ApiResponse<{
+  totalPatients: number
+  activeShares: number
+  pendingRequests: number
+  todayAccess: number
+}>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getDoctorStatistics()
+  if (mockResponse) return mockResponse as any
+  
+  return request.get('/doctor/statistics')
+}
+
+/**
+ * 获取医生端可访问的医疗数据列表
+ * @param params 查询参数
+ * @returns 数据列表
+ */
+export const getMedicalDataList = async (params?: {
+  dataType?: string
+  authStatus?: string
+  keyword?: string
+  dateRange?: string[]
+  page?: number
+  pageSize?: number
+}): Promise<ApiResponse<PaginatedData<MedicalFile>>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getDoctorAccessibleData(params)
+  if (mockResponse) return mockResponse as any
+  
+  return request.get('/doctor/medical-data', { params })
+}
+
+/**
+ * 发起数据授权申请
+ * @param requestData 申请数据
+ * @returns 申请结果
+ */
+export const requestDataAuthorization = async (requestData: CreateAuthorizationRequest): Promise<ApiResponse<AuthorizationRequest>> => {
+  return request.post('/doctor/authorization-requests', requestData)
+}
+
+/**
+ * 获取授权状态
+ * @param dataId 数据ID
+ * @returns 授权状态
+ */
+export const getAuthorizationStatus = async (dataId: string): Promise<ApiResponse<DataAuthorizationStatus>> => {
+  return request.get(`/doctor/authorization-status/${dataId}`)
+}
+
+/**
+ * 获取我的授权申请列表
+ * @param params 查询参数
+ * @returns 授权申请列表
+ */
+export const getMyAuthorizationRequests = async (params?: {
+  status?: 'pending' | 'approved' | 'rejected'
+  page?: number
+  pageSize?: number
+}): Promise<ApiResponse<PaginatedData<AuthorizationRequest>>> => {
+  return request.get('/doctor/my-authorization-requests', { params })
+}
+
 // 导出所有API函数作为默认对象
 export default {
   getPatientList,
@@ -310,10 +373,14 @@ export default {
   accessPatientFile,
   downloadSharedFile,
   getAccessHistory,
-  getDashboardStatistics,
   addPatientNote,
   getPatientNotes,
   toggleFavoritePatient,
-  getFavoritePatients
+  getFavoritePatients,
+  getDoctorStatistics,
+  getMedicalDataList,
+  requestDataAuthorization,
+  getAuthorizationStatus,
+  getMyAuthorizationRequests
 }
 

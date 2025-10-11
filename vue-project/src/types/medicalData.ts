@@ -7,6 +7,9 @@ export type FileStatus = 'uploading' | 'processing' | 'completed' | 'failed'
 // 分享状态枚举
 export type ShareStatus = 'active' | 'expired' | 'revoked'
 
+// 授权状态枚举
+export type AuthorizationStatus = 'not-requested' | 'pending' | 'approved' | 'rejected' | 'expired'
+
 // 访问权限枚举
 export type AccessPermission = 'view' | 'download' | 'share'
 
@@ -29,6 +32,9 @@ export interface MedicalFile {
   shareCount: number
   downloadCount: number
   viewCount: number
+  // 授权状态信息
+  authStatus?: AuthorizationStatus
+  authorizationCount?: number
   // 文件预览信息
   thumbnailUrl?: string
   previewUrl?: string
@@ -291,5 +297,65 @@ export interface AccessHistoryResponse {
 export interface FileStatisticsResponse {
   success: boolean
   data: FileStatistics
+  message: string
+}
+
+// 授权请求接口
+export interface AuthorizationRequest {
+  id: string
+  doctorId: string
+  doctorName: string
+  doctorDepartment: string
+  patientId: string
+  dataId: string
+  dataName: string
+  dataType: string
+  reason: string
+  purpose: string
+  requestedAt: string
+  status: 'pending' | 'approved' | 'rejected'
+  processedAt?: string
+  expiresAt?: string
+  rejectReason?: string
+}
+
+// 授权请求数据（医生发起）
+export interface CreateAuthorizationRequest {
+  dataId: string
+  patientId: string
+  reason: string
+  purpose: 'diagnosis' | 'evaluation' | 'research' | 'consultation' | 'other'
+}
+
+// 授权审批数据（患者处理）
+export interface ApproveAuthorizationData {
+  requestId: string
+  expiresIn: number // 天数，0表示永久
+  notes?: string
+}
+
+export interface RejectAuthorizationData {
+  requestId: string
+  reason: string
+}
+
+// 数据授权状态
+export interface DataAuthorizationStatus {
+  dataId: string
+  isAuthorized: boolean
+  authorizationId?: string
+  authorizedAt?: string
+  expiresAt?: string
+}
+
+// 授权请求列表响应
+export interface AuthorizationListResponse {
+  success: boolean
+  data: {
+    requests: AuthorizationRequest[]
+    total: number
+    page: number
+    pageSize: number
+  }
   message: string
 }

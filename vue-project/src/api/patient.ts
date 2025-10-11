@@ -9,8 +9,13 @@ import type {
   MedicalFile,
   ShareRecord,
   AccessRecord,
-  FileStatistics
+  FileStatistics,
+  AuthorizationRequest,
+  ApproveAuthorizationData,
+  RejectAuthorizationData,
+  AuthorizationListResponse
 } from '@/types/medicalData'
+import { mockService } from '@/mock/mockService'
 
 // 医生基本信息
 export interface DoctorInfo {
@@ -43,36 +48,6 @@ export interface PatientPermissionRequest {
   processedAt?: string
   rejectReason?: string
   doctor: DoctorInfo
-}
-
-/**
- * 获取患者仪表板统计数据
- * @returns 统计数据
- */
-export const getDashboardStatistics = async (): Promise<ApiResponse<{
-  totalFiles: number
-  sharedFiles: number
-  activeShares: number
-  totalAccessCount: number
-  pendingRequests: number
-  authorizedDoctors: number
-  storageUsed: number
-  storageLimit: number
-  recentFiles: MedicalFile[]
-  recentShares: ShareRecord[]
-  recentAccess: AccessRecord[]
-  categoryDistribution: Array<{
-    category: string
-    count: number
-    percentage: number
-  }>
-  monthlyUploadTrend: Array<{
-    month: string
-    count: number
-    size: number
-  }>
-}>> => {
-  return request.get('/patient/dashboard/statistics')
 }
 
 /**
@@ -358,9 +333,70 @@ export const updatePrivacySettings = async (settings: {
   return request.put('/patient/privacy-settings', settings)
 }
 
+/**
+ * 获取授权请求列表
+ * @param params 查询参数
+ * @returns 授权请求列表
+ */
+export const getAuthorizationRequests = async (params?: {
+  status?: 'pending' | 'approved' | 'rejected'
+  page?: number
+  pageSize?: number
+}): Promise<ApiResponse<PaginatedData<AuthorizationRequest>>> => {
+  // TODO: 集成模拟数据支持
+  return request.get('/patient/authorization-requests', { params })
+}
+
+/**
+ * 同意授权申请
+ * @param approveData 授权数据
+ * @returns 操作结果
+ */
+export const approveAuthorization = async (approveData: ApproveAuthorizationData): Promise<ApiResponse> => {
+  return request.post(`/patient/authorization-requests/${approveData.requestId}/approve`, {
+    expiresIn: approveData.expiresIn,
+    notes: approveData.notes
+  })
+}
+
+/**
+ * 拒绝授权申请
+ * @param rejectData 拒绝数据
+ * @returns 操作结果
+ */
+export const rejectAuthorization = async (rejectData: RejectAuthorizationData): Promise<ApiResponse> => {
+  return request.post(`/patient/authorization-requests/${rejectData.requestId}/reject`, {
+    reason: rejectData.reason
+  })
+}
+
+/**
+ * 撤销授权
+ * @param authorizationId 授权ID
+ * @returns 操作结果
+ */
+export const revokeAuthorization = async (authorizationId: string): Promise<ApiResponse> => {
+  return request.post(`/patient/authorizations/${authorizationId}/revoke`)
+}
+
+/**
+ * 获取授权历史
+ * @param params 查询参数
+ * @returns 授权历史列表
+ */
+export const getAuthorizationHistory = async (params?: {
+  dataId?: string
+  doctorId?: string
+  startDate?: string
+  endDate?: string
+  page?: number
+  pageSize?: number
+}): Promise<ApiResponse<PaginatedData<AuthorizationRequest>>> => {
+  return request.get('/patient/authorization-history', { params })
+}
+
 // 导出所有API函数作为默认对象
 export default {
-  getDashboardStatistics,
   getFileStatistics,
   getPermissionRequests,
   processPermissionRequest,
@@ -379,6 +415,11 @@ export default {
   getSecurityEvents,
   resolveSecurityEvent,
   getPrivacySettings,
-  updatePrivacySettings
+  updatePrivacySettings,
+  getAuthorizationRequests,
+  approveAuthorization,
+  rejectAuthorization,
+  revokeAuthorization,
+  getAuthorizationHistory
 }
 

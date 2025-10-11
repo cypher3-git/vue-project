@@ -59,7 +59,7 @@ import LoginView from '@/views/auth/LoginView.vue'
 /* 左侧品牌展示区域 */
 .brand-section {
   flex: 1;
-  background: linear-gradient(135deg, #4dd0e1 0%, #26a69a 100%);
+  background: url('@/assets/background.jpg') center/cover no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -74,8 +74,8 @@ import LoginView from '@/views/auth/LoginView.vue'
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
 }
 
 .brand-content {

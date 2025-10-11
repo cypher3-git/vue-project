@@ -12,6 +12,7 @@ import type {
   ShareStatus,
   AccessPermission
 } from '@/types/medicalData'
+import { mockService } from '@/mock/mockService'
 
 /**
  * 创建文件分享
@@ -19,6 +20,10 @@ import type {
  * @returns 创建的分享记录
  */
 export const createShare = async (shareData: ShareFileData): Promise<ApiResponse<ShareRecord>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.createShare(shareData)
+  if (mockResponse) return mockResponse as any
+  
   return request.post('/shares', shareData)
 }
 
@@ -35,6 +40,10 @@ export const getMyShares = async (params?: {
   page?: number
   pageSize?: number
 }): Promise<ShareListResponse> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getMyShares(params)
+  if (mockResponse) return mockResponse as any
+  
   return request.get('/shares/my-shares', { params })
 }
 
@@ -99,6 +108,10 @@ export const updateShare = async (
  * @returns 撤销结果
  */
 export const revokeShare = async (shareId: string): Promise<ApiResponse> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.revokeShare(shareId)
+  if (mockResponse) return mockResponse as any
+  
   return request.post(`/shares/${shareId}/revoke`)
 }
 

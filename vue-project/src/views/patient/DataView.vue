@@ -21,8 +21,8 @@
       </el-card>
       <el-card class="stat-card">
         <div class="stat-content">
-          <div class="stat-number">{{ sharedData }}</div>
-          <div class="stat-label">已分享数据</div>
+          <div class="stat-number">{{ authorizedData }}</div>
+          <div class="stat-label">授权中数据</div>
         </div>
       </el-card>
       <el-card class="stat-card">
@@ -52,14 +52,15 @@
           </el-select>
           
           <el-select 
-            v-model="filters.status" 
-            placeholder="分享状态" 
+            v-model="filters.authStatus" 
+            placeholder="授权状态" 
             clearable 
-            style="width: 120px; margin-right: 16px;"
+            style="width: 150px; margin-right: 16px;"
           >
             <el-option label="全部状态" value="" />
-            <el-option label="已分享" value="已分享" />
-            <el-option label="未分享" value="未分享" />
+            <el-option label="无授权请求" value="无授权请求" />
+            <el-option label="待审批" value="待审批" />
+            <el-option label="已授权" value="已授权" />
           </el-select>
           
           <el-date-picker
@@ -116,13 +117,13 @@
         
         <el-table-column prop="size" label="大小" width="100" />
         
-        <el-table-column label="分享状态" width="120">
+        <el-table-column label="授权状态" width="120">
           <template #default="scope">
             <el-tag 
-              :type="scope.row.isShared ? 'success' : 'info'"
+              :type="getAuthStatusType(scope.row.authStatus)"
               size="small"
             >
-              {{ scope.row.isShared ? '已分享' : '未分享' }}
+              {{ getAuthStatusText(scope.row.authStatus) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -144,13 +145,6 @@
               @click="downloadData(scope.row)"
             >
               下载
-            </el-button>
-            <el-button 
-              type="text" 
-              size="small" 
-              @click="shareData(scope.row)"
-            >
-              分享
             </el-button>
             <el-button 
               type="text" 
@@ -194,8 +188,8 @@
           </div>
           <div class="data-title">
             <h3>{{ currentViewData.name }}</h3>
-            <el-tag :type="currentViewData.isShared ? 'success' : 'info'" size="small">
-              {{ currentViewData.isShared ? '已分享' : '未分享' }}
+            <el-tag :type="getAuthStatusType(currentViewData.authStatus)" size="small">
+              {{ getAuthStatusText(currentViewData.authStatus) }}
             </el-tag>
           </div>
         </div>
@@ -213,9 +207,9 @@
             <el-descriptions-item label="创建日期">
               {{ currentViewData.date }}
             </el-descriptions-item>
-            <el-descriptions-item label="分享状态">
-              <el-tag :type="currentViewData.isShared ? 'success' : 'info'" size="small">
-                {{ currentViewData.isShared ? '已分享' : '未分享' }}
+            <el-descriptions-item label="授权状态">
+              <el-tag :type="getAuthStatusType(currentViewData.authStatus)" size="small">
+                {{ getAuthStatusText(currentViewData.authStatus) }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="描述信息" :span="2">
@@ -342,106 +336,7 @@
             <el-icon><Download /></el-icon>
             下载
           </el-button>
-          <el-button @click="shareData(currentViewData)" type="success" plain>
-            <el-icon><Share /></el-icon>
-            分享
-          </el-button>
           <el-button @click="viewDialogVisible = false">关闭</el-button>
-        </div>
-      </template>
-    </el-dialog>
-
-    <!-- 分享对话框 -->
-    <el-dialog v-model="shareDialogVisible" title="分享数据" width="500px" :close-on-click-modal="false">
-      <div v-if="currentShareData" class="share-content">
-        <div class="share-info">
-          <h4>{{ currentShareData.name }}</h4>
-          <p class="share-desc">{{ currentShareData.description }}</p>
-        </div>
-        
-        <el-divider />
-        
-        <div class="share-options">
-          <el-form :model="shareForm" label-width="100px">
-            <el-form-item label="授权科室">
-              <el-select 
-                v-model="shareForm.department" 
-                placeholder="请选择授权科室" 
-                style="width: 100%"
-                filterable
-                clearable
-              >
-                <el-option 
-                  v-for="dept in departmentList" 
-                  :key="dept.value" 
-                  :label="dept.label" 
-                  :value="dept.value"
-                />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="访问权限">
-              <el-radio-group v-model="shareForm.permission">
-                <el-radio label="read">只能查看</el-radio>
-                <el-radio label="download">可以下载</el-radio>
-                <el-radio label="full">完全访问</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            
-            <el-form-item label="有效期">
-              <el-select v-model="shareForm.expiry" style="width: 100%">
-                <el-option label="1天" value="1" />
-                <el-option label="7天" value="7" />
-                <el-option label="30天" value="30" />
-                <el-option label="永久" value="0" />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="访问密码">
-              <el-input 
-                v-model="shareForm.password" 
-                placeholder="可选，留空表示无密码"
-                show-password
-                clearable
-              />
-            </el-form-item>
-            
-            <el-form-item label="分享备注">
-              <el-input 
-                v-model="shareForm.notes" 
-                type="textarea"
-                :rows="2"
-                placeholder="可选，添加分享说明"
-              />
-            </el-form-item>
-            
-          </el-form>
-        </div>
-        
-        <el-divider />
-        
-        <!-- 分享链接 -->
-        <div v-if="shareUrl" class="share-result">
-          <h4>分享链接</h4>
-          <el-input 
-            v-model="shareUrl" 
-            readonly
-            class="share-url"
-          >
-            <template #append>
-              <el-button @click="copyToClipboard(shareUrl)">
-                <el-icon><CopyDocument /></el-icon>
-                复制
-              </el-button>
-            </template>
-          </el-input>
-        </div>
-      </div>
-      
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="shareDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="generateShare">生成分享</el-button>
         </div>
       </template>
     </el-dialog>
@@ -550,10 +445,7 @@ const medicalDataStore = useMedicalDataStore()
 const loading = computed(() => medicalDataStore.loading)
 const uploadDialogVisible = ref(false)
 const viewDialogVisible = ref(false)
-const shareDialogVisible = ref(false)
 const currentViewData = ref<any>(null)
-const currentShareData = ref<any>(null)
-const shareUrl = ref('')
 
 // 文件预览状态
 const previewLoading = ref(false)
@@ -567,13 +459,16 @@ const imageError = ref(false)
 
 // 统计数据
 const totalData = computed(() => medicalDataStore.totalFiles)
-const sharedData = computed(() => medicalDataStore.sharedFiles.length)
+const authorizedData = computed(() => {
+  // 计算已授权或授权中的数据数量
+  return medicalDataStore.files.filter((f: any) => f.authStatus === 'authorized' || f.authStatus === '待审批').length
+})
 const recentUpload = computed(() => medicalDataStore.recentFiles.length)
 
 // 筛选条件
 const filters = ref({
   type: '',
-  status: '',
+  authStatus: '',
   dateRange: [] as any[],
   keyword: ''
 })
@@ -594,14 +489,6 @@ const uploadForm = ref({
   file: null as UploadFile | null
 })
 
-// 分享表单数据
-const shareForm = ref({
-  department: '',
-  permission: 'read',
-  expiry: '7',
-  password: '',
-  notes: ''
-})
 
 // 科室列表
 const departmentList = ref([
@@ -718,10 +605,9 @@ const filteredData = computed(() => {
     result = result.filter(item => item.category === filters.value.type || item.fileType === filters.value.type)
   }
 
-  // 按分享状态筛选
-  if (filters.value.status) {
-    const isShared = filters.value.status === '已分享'
-    result = result.filter(item => item.isShared === isShared)
+  // 按授权状态筛选
+  if (filters.value.authStatus) {
+    result = result.filter(item => item.authStatus === filters.value.authStatus)
   }
 
   // 按关键词搜索
@@ -1151,152 +1037,19 @@ const downloadFromUrl = async (url: string, filename: string) => {
   }
 }
 
-const shareData = (row: any) => {
-  currentShareData.value = row
-  shareUrl.value = ''
-  shareForm.value = {
-    doctorId: '',
-    permission: 'read',
-    expiry: '7',
-    password: '',
-    notes: ''
-  }
-  shareDialogVisible.value = true
-}
-
-// 生成分享链接
-const generateShare = async () => {
-  if (!currentShareData.value) return
-  
-  try {
-    // 生成分享链接
-    const baseUrl = window.location.origin
-    const dataId = currentShareData.value.id
-    const expiry = shareForm.value.expiry === '0' ? 'permanent' : shareForm.value.expiry + 'd'
-    const hasPassword = shareForm.value.password ? '&pwd=true' : ''
-    
-    shareUrl.value = `${baseUrl}/share/medical-data/${dataId}?expiry=${expiry}${hasPassword}`
-    
-    // 准备分享数据
-    let shareDataToStore: any = {
-      data: { ...currentShareData.value },
-      shareInfo: {
-        shareTime: new Date().toISOString(),
-        expiry: expiry,
-        password: shareForm.value.password || null,
-        hasPassword: !!shareForm.value.password,
-        permission: shareForm.value.permission,
-        notes: shareForm.value.notes || '',
-        sharedBy: '当前用户', // 实际应用中应该是真实的用户信息
-        shareId: dataId,
-        // 科室信息
-        department: shareForm.value.department || null
-      }
-    }
-    
-    // 如果是用户上传的文件，需要将File对象转换为可存储的格式
-    if (currentShareData.value.isUploaded && currentShareData.value.originalFile) {
-      const file = currentShareData.value.originalFile
-      
-      // 显示转换进度
-      ElMessage.info('正在处理文件，请稍候...')
-      
-      try {
-        // 检查文件大小，如果太大则跳过内容转换
-        const maxSize = 5 * 1024 * 1024 // 5MB限制
-        let fileContent = null
-        
-        if (file.size <= maxSize) {
-          // 将File转换为ArrayBuffer，然后转为Base64
-          const arrayBuffer = await file.arrayBuffer()
-          fileContent = arrayBufferToBase64(arrayBuffer)
-        }
-        
-        // 移除原始File对象，添加可序列化的文件数据
-        shareDataToStore.data = {
-          ...shareDataToStore.data,
-          originalFile: null, // 移除不可序列化的File对象
-          fileData: {
-            content: fileContent, // 如果文件太大则为null
-            type: file.type,
-            name: file.name,
-            size: file.size,
-            lastModified: file.lastModified,
-            isLargeFile: file.size > maxSize // 标记是否为大文件
-          }
-        }
-      } catch (fileError) {
-        console.error('文件处理失败:', fileError)
-        // 即使文件处理失败，也继续分享流程，只是不保存文件内容
-        shareDataToStore.data = {
-          ...shareDataToStore.data,
-          originalFile: null,
-          fileData: {
-            content: null,
-            type: file.type,
-            name: file.name,
-            size: file.size,
-            lastModified: file.lastModified,
-            processingFailed: true
-          }
-        }
-      }
-    }
-    
-    // 存储分享数据到localStorage
-    const shareKey = `medical_share_${dataId}`
-    try {
-      localStorage.setItem(shareKey, JSON.stringify(shareDataToStore))
-    } catch (storageError) {
-      console.error('存储到localStorage失败:', storageError)
-      // 如果存储失败，尝试移除文件内容后再次存储
-      if (shareDataToStore.data.fileData && shareDataToStore.data.fileData.content) {
-        shareDataToStore.data.fileData.content = null
-        shareDataToStore.data.fileData.storageFailed = true
-        localStorage.setItem(shareKey, JSON.stringify(shareDataToStore))
-      } else {
-        throw storageError // 如果仍然失败，抛出错误
-      }
-    }
-    
-    // 更新数据的分享状态 - 重新加载数据以获取最新状态
-    if (currentShareData.value) {
-      await medicalDataStore.getFiles()
-    }
-    
-    ElMessage.success('分享链接生成成功')
-    console.log('分享数据已存储:', shareKey, shareDataToStore)
-    
-    // 发送自定义事件通知其他页面更新
-    window.dispatchEvent(new CustomEvent('medicalDataShared', {
-      detail: {
-        shareKey,
-        shareData: shareDataToStore,
-        timestamp: new Date().toISOString()
-      }
-    }))
-  } catch (error) {
-    console.error('生成分享链接失败:', error)
-    ElMessage.error('生成分享链接失败，请重试')
+// 授权状态相关辅助函数
+const getAuthStatusType = (status: string) => {
+  switch (status) {
+    case '无授权请求': return 'info'
+    case '待审批': return 'warning'
+    case '已授权': return 'success'
+    case '已拒绝': return 'danger'
+    default: return 'info'
   }
 }
 
-
-// 复制到剪贴板
-const copyToClipboard = async (text: string) => {
-  try {
-    await navigator.clipboard.writeText(text)
-    ElMessage.success('链接已复制到剪贴板')
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-    ElMessage.success('链接已复制到剪贴板')
-  }
+const getAuthStatusText = (status: string) => {
+  return status || '无授权请求'
 }
 
 const deleteData = async (row: any) => {
@@ -1364,6 +1117,45 @@ onMounted(async () => {
 .patient-data {
   padding: 24px;
   background: #f8fafc;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 允许输入框和文本区域内文本选择 */
+.patient-data :deep(input),
+.patient-data :deep(textarea),
+.patient-data :deep(.el-input__inner),
+.patient-data :deep(.el-textarea__inner) {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* 移除所有可点击元素的焦点轮廓 */
+.patient-data :deep(button),
+.patient-data :deep(.el-button),
+.patient-data :deep(.el-tag),
+.patient-data :deep(.el-select),
+.patient-data :deep(.el-radio),
+.patient-data :deep(.el-checkbox) {
+  outline: none;
+}
+
+/* 移除焦点时的默认轮廓，但保留键盘导航的可访问性 */
+.patient-data :deep(button:focus),
+.patient-data :deep(.el-button:focus),
+.patient-data :deep(.el-tag:focus) {
+  outline: none;
+}
+
+/* 为键盘用户保留焦点指示 */
+.patient-data :deep(button:focus-visible),
+.patient-data :deep(.el-button:focus-visible) {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
 }
 
 /* 页面头部 */

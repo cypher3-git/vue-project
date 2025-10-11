@@ -25,34 +25,14 @@ const routes: RouteRecordRaw[] = [
     path: '/patient',
     component: () => import('@/layouts/AppLayout.vue'),
     meta: { requiresAuth: true, role: 'patient' },
-    redirect: '/patient/dashboard',
+    redirect: '/patient/data',
     children: [
-      {
-        path: 'dashboard',
-        name: 'PatientDashboard',
-        component: () => import('@/views/patient/DashboardView.vue'),
-        meta: {
-          title: '患者仪表板',
-          requiresAuth: true,
-          role: 'patient'
-        }
-      },
       {
         path: 'data',
         name: 'PatientData',
         component: () => import('@/views/patient/DataView.vue'),
         meta: {
           title: '我的数据',
-          requiresAuth: true,
-          role: 'patient'
-        }
-      },
-      {
-        path: 'share',
-        name: 'PatientShare',
-        component: () => import('@/views/patient/ShareView.vue'),
-        meta: {
-          title: '分享管理',
           requiresAuth: true,
           role: 'patient'
         }
@@ -66,6 +46,16 @@ const routes: RouteRecordRaw[] = [
           requiresAuth: true,
           role: 'patient'
         }
+      },
+      {
+        path: 'authorization',
+        name: 'PatientAuthorization',
+        component: () => import('@/views/patient/AuthorizationView.vue'),
+        meta: {
+          title: '授权管理',
+          requiresAuth: true,
+          role: 'patient'
+        }
       }
     ]
   },
@@ -73,24 +63,14 @@ const routes: RouteRecordRaw[] = [
     path: '/doctor',
     component: () => import('@/layouts/AppLayout.vue'),
     meta: { requiresAuth: true, role: 'doctor' },
-    redirect: '/doctor/dashboard',
+    redirect: '/doctor/data',
     children: [
       {
-        path: 'dashboard',
-        name: 'DoctorDashboard',
-        component: () => import('@/views/doctor/DashboardView.vue'),
+        path: 'data',
+        name: 'DoctorDataManagement',
+        component: () => import('@/views/doctor/DataManagementView.vue'),
         meta: {
-          title: '医生工作台',
-          requiresAuth: true,
-          role: 'doctor'
-        }
-      },
-      {
-        path: 'patients',
-        name: 'DoctorPatients',
-        component: () => import('@/views/doctor/PatientsView.vue'),
-        meta: {
-          title: '患者管理',
+          title: '数据管理',
           requiresAuth: true,
           role: 'doctor'
         }
@@ -155,7 +135,7 @@ router.beforeEach(async (to, from, next) => {
     // 检查角色权限
     if (to.meta.role && authStore.user?.role !== to.meta.role) {
       ElMessage.error('您没有权限访问该页面')
-      const redirectPath = authStore.user?.role === 'patient' ? '/patient/dashboard' : '/doctor/dashboard'
+      const redirectPath = authStore.user?.role === 'patient' ? '/patient/data' : '/doctor/data'
       next(redirectPath)
       return
     }

@@ -19,6 +19,7 @@ import type {
   DataTraceability,
   IntegrityCheck
 } from '@/types/medicalData'
+import { mockService } from '@/mock/mockService'
 
 /**
  * 获取医疗文件列表
@@ -26,6 +27,10 @@ import type {
  * @returns 文件列表及分页信息
  */
 export const getMedicalFiles = async (params?: FileQueryParams): Promise<FileListResponse> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.getPatientFiles(params)
+  if (mockResponse) return mockResponse as any
+  
   return request.get('/medical-data/files', { params })
 }
 
