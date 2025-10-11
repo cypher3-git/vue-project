@@ -67,15 +67,11 @@
     <!-- 数据分享管理 -->
     <el-card class="data-table-card">
       <template #header>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3>我的数据分享设置</h3>
-          <el-button type="primary" size="small" @click="showAddShareDialog">添加分享</el-button>
-        </div>
+        <h3>我的数据分享设置</h3>
       </template>
       
       <el-table :data="shareData" style="width: 100%">
-        <el-table-column prop="doctor" label="分享给医生" width="120" />
-        <el-table-column prop="department" label="医生科室" width="120" />
+        <el-table-column prop="department" label="授权科室" width="150" />
         <el-table-column prop="dataTypes" label="分享数据类型" width="200" />
         <el-table-column label="授权到期时间" width="180">
           <template #default="scope">
@@ -104,22 +100,18 @@
         :rules="shareRules" 
         label-width="120px"
       >
-        <el-form-item label="选择医生" prop="doctor">
-          <el-select v-model="shareForm.doctor" placeholder="请选择医生" style="width: 100%">
-            <el-option label="李医生" value="李医生" />
-            <el-option label="王医生" value="王医生" />
-            <el-option label="张医生" value="张医生" />
-            <el-option label="赵医生" value="赵医生" />
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="医生科室" prop="department">
+        <el-form-item label="授权科室" prop="department">
           <el-select v-model="shareForm.department" placeholder="请选择科室" style="width: 100%">
             <el-option label="心血管科" value="心血管科" />
             <el-option label="内科" value="内科" />
             <el-option label="骨科" value="骨科" />
             <el-option label="神经科" value="神经科" />
             <el-option label="外科" value="外科" />
+            <el-option label="呼吸内科" value="呼吸内科" />
+            <el-option label="消化内科" value="消化内科" />
+            <el-option label="泌尿科" value="泌尿科" />
+            <el-option label="妇产科" value="妇产科" />
+            <el-option label="儿科" value="儿科" />
           </el-select>
         </el-form-item>
         
@@ -203,7 +195,6 @@ const shareFormRef = ref<FormInstance>()
 
 // 表单数据
 const shareForm = ref({
-  doctor: '',
   department: '',
   dataTypesList: [] as string[],
   expireDate: '' as string | Date
@@ -211,11 +202,8 @@ const shareForm = ref({
 
 // 表单验证规则
 const shareRules: FormRules = {
-  doctor: [
-    { required: true, message: '请选择医生', trigger: 'change' }
-  ],
   department: [
-    { required: true, message: '请选择科室', trigger: 'change' }
+    { required: true, message: '请选择授权科室', trigger: 'change' }
   ],
   dataTypesList: [
     { 
@@ -286,21 +274,12 @@ const loadShareRecords = async () => {
 }
 
 // 处理函数
-// 显示添加分享对话框
-const showAddShareDialog = () => {
-  isEditMode.value = false
-  editingIndex.value = -1
-  resetForm()
-  shareDialogVisible.value = true
-}
-
 // 编辑分享设置
 const editShare = (row: any, index: number) => {
   isEditMode.value = true
   editingIndex.value = index
   
   // 填充表单数据
-  shareForm.value.doctor = row.doctor
   shareForm.value.department = row.department
   shareForm.value.dataTypesList = row.dataTypes.split('、')
   
@@ -322,7 +301,7 @@ const editShare = (row: any, index: number) => {
 const revokeShare = async (row: any, index: number) => {
   try {
     await ElMessageBox.confirm(
-      `确定要撤销对 ${row.doctor} (${row.department}) 的数据分享权限吗？`,
+      `确定要撤销对 ${row.department} 的数据分享权限吗？`,
       '撤销确认',
       {
         confirmButtonText: '确定撤销',
@@ -350,7 +329,6 @@ const resetForm = () => {
     shareFormRef.value.resetFields()
   }
   shareForm.value = {
-    doctor: '',
     department: '',
     dataTypesList: [],
     expireDate: '' as string | Date
@@ -378,7 +356,6 @@ const handleShareSubmit = async () => {
     }
 
     const formData = {
-      doctor: shareForm.value.doctor,
       department: shareForm.value.department,
       dataTypes: shareForm.value.dataTypesList.join('、'),
       expireDate: String(formattedExpireDate)
@@ -389,13 +366,13 @@ const handleShareSubmit = async () => {
       shareData.value[editingIndex.value] = formData
       ElMessage.success('分享设置已更新')
     } else {
-      // 添加模式：检查是否已存在相同医生的分享
+      // 添加模式：检查是否已存在相同科室的分享
       const existingIndex = shareData.value.findIndex(item => 
-        item.doctor === formData.doctor && item.department === formData.department
+        item.department === formData.department
       )
       
       if (existingIndex >= 0) {
-        ElMessage.warning('已存在对该医生的分享设置，请选择修改现有设置')
+        ElMessage.warning('已存在对该科室的分享设置，请选择修改现有设置')
         return
       }
       

@@ -57,7 +57,8 @@ export interface UpdateFileData {
 export interface ShareRecord {
   id: string
   fileId: string
-  doctorId: string
+  doctorId?: string  // 可选：特定医生ID（向后兼容）
+  department?: string  // 可选：科室名称（新的分享方式）
   patientId: string
   permissions: AccessPermission[]
   shareReason?: string
@@ -68,7 +69,7 @@ export interface ShareRecord {
   accessCount: number
   lastAccessAt?: string
   // 关联数据
-  doctor: {
+  doctor?: {  // 可选：当分享给特定医生时
     id: string
     name: string
     hospital: string
@@ -163,11 +164,14 @@ export interface BatchOperationData {
 
 // 文件分享请求数据
 export interface ShareFileData {
-  fileIds: string[]
-  doctorId: string
+  fileId?: string
+  fileIds?: string[]
+  doctorId?: string
+  department?: string
   permissions: AccessPermission[]
   shareReason?: string
-  expiresAt: string
+  expiresAt?: string
+  accessPassword?: string
 }
 
 // 医疗数据导出请求

@@ -30,6 +30,7 @@ export const createShare = async (shareData: ShareFileData): Promise<ApiResponse
 export const getMyShares = async (params?: {
   status?: ShareStatus
   doctorId?: string
+  department?: string
   fileId?: string
   page?: number
   pageSize?: number
@@ -38,13 +39,14 @@ export const getMyShares = async (params?: {
 }
 
 /**
- * 获取医生收到的分享记录
+ * 获取医生收到的分享记录（包括分享给其所在科室的数据）
  * @param params 查询参数
  * @returns 分享记录列表
  */
 export const getReceivedShares = async (params?: {
   status?: ShareStatus
   patientId?: string
+  department?: string
   page?: number
   pageSize?: number
 }): Promise<ShareListResponse> => {
@@ -153,6 +155,24 @@ export const getSharesWithDoctor = async (
 }
 
 /**
+ * 获取分享给特定科室的记录
+ * @param department 科室名称
+ * @param params 查询参数
+ * @returns 分享记录列表
+ */
+export const getSharesByDepartment = async (
+  department: string,
+  params?: {
+    status?: ShareStatus
+    patientId?: string
+    page?: number
+    pageSize?: number
+  }
+): Promise<ShareListResponse> => {
+  return request.get(`/shares/department/${encodeURIComponent(department)}`, { params })
+}
+
+/**
  * 获取分享统计信息
  * @returns 分享统计数据
  */
@@ -235,6 +255,7 @@ export default {
   extendShareExpiration,
   getFileShares,
   getSharesWithDoctor,
+  getSharesByDepartment,
   getShareStatistics,
   checkSharePermission,
   generateShareLink,

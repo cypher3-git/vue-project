@@ -90,32 +90,6 @@
       </el-card>
 
     </div>
-
-    <!-- 快捷操作区域 -->
-    <el-card class="quick-operations-card">
-      <template #header>
-        <h3>快捷操作</h3>
-      </template>
-      
-      <div class="operations-grid">
-        <div class="operation-item" @click="searchPatient">
-          <el-icon size="24"><Search /></el-icon>
-          <span>搜索患者</span>
-        </div>
-        <div class="operation-item" @click="viewReports">
-          <el-icon size="24"><Document /></el-icon>
-          <span>查看报告</span>
-        </div>
-        <div class="operation-item" @click="requestAccess">
-          <el-icon size="24"><Plus /></el-icon>
-          <span>申请权限</span>
-        </div>
-        <div class="operation-item" @click="viewStatistics">
-          <el-icon size="24"><DataAnalysis /></el-icon>
-          <span>数据统计</span>
-        </div>
-      </div>
-    </el-card>
   </div>
 </template>
 
@@ -124,11 +98,7 @@ import { ref, computed, onMounted } from 'vue'
 import { 
   UserFilled, 
   View, 
-  FolderOpened, 
-  Search, 
-  Document, 
-  Plus, 
-  DataAnalysis 
+  FolderOpened
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -268,23 +238,6 @@ const accessPatientData = async (record: any) => {
   }
 }
 
-// 快捷操作
-const searchPatient = () => {
-  router.push('/doctor/patients?search=true')
-}
-
-const viewReports = () => {
-  router.push('/doctor/reports')
-}
-
-const requestAccess = () => {
-  router.push('/doctor/access-requests')
-}
-
-const viewStatistics = () => {
-  router.push('/doctor/statistics')
-}
-
 // 组件挂载时初始化
 onMounted(async () => {
   await Promise.all([
@@ -412,8 +365,7 @@ onMounted(async () => {
 }
 
 /* 卡片公共样式 */
-.recent-access-card,
-.quick-operations-card {
+.recent-access-card {
   border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   border: none;
@@ -443,87 +395,6 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-/* 权限申请概览 */
-.no-requests {
-  padding: 40px 0;
-  text-align: center;
-}
-
-.requests-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.request-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #f0f0f0;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.request-item:hover {
-  background-color: #fafafa;
-}
-
-.request-item:last-child {
-  border-bottom: none;
-}
-
-.request-info .patient-name {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.request-type {
-  color: #1890ff;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-.request-time {
-  color: #666;
-  font-size: 11px;
-}
-
-.request-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* 快捷操作 */
-.operations-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-}
-
-.operation-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-align: center;
-}
-
-.operation-item:hover {
-  border-color: #1890ff;
-  background-color: #f6f8ff;
-  transform: translateY(-2px);
-}
-
-.operation-item span {
-  font-size: 14px;
-  color: #333;
-}
-
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .content-grid {
@@ -541,18 +412,10 @@ onMounted(async () => {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
-  .operations-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .operations-grid {
     grid-template-columns: 1fr;
   }
 }

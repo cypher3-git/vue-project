@@ -363,25 +363,20 @@
         
         <div class="share-options">
           <el-form :model="shareForm" label-width="100px">
-            <el-form-item label="分享给医生">
+            <el-form-item label="授权科室">
               <el-select 
-                v-model="shareForm.doctorId" 
-                placeholder="可选，选择授权医生" 
+                v-model="shareForm.department" 
+                placeholder="请选择授权科室" 
                 style="width: 100%"
                 filterable
                 clearable
               >
                 <el-option 
-                  v-for="doctor in doctorList" 
-                  :key="doctor.id" 
-                  :label="`${doctor.name} - ${doctor.department}`" 
-                  :value="doctor.id"
-                >
-                  <div class="doctor-option">
-                    <span>{{ doctor.name }}</span>
-                    <span class="doctor-dept">{{ doctor.department }}</span>
-                  </div>
-                </el-option>
+                  v-for="dept in departmentList" 
+                  :key="dept.value" 
+                  :label="dept.label" 
+                  :value="dept.value"
+                />
               </el-select>
             </el-form-item>
             
@@ -601,22 +596,27 @@ const uploadForm = ref({
 
 // 分享表单数据
 const shareForm = ref({
-  doctorId: '',
+  department: '',
   permission: 'read',
   expiry: '7',
   password: '',
   notes: ''
 })
 
-// 医生列表
-const doctorList = ref([
-  { id: 1, name: '张医生', department: '心血管科', phone: '138****1234' },
-  { id: 2, name: '李医生', department: '呼吸内科', phone: '139****5678' },
-  { id: 3, name: '王医生', department: '消化内科', phone: '137****9012' },
-  { id: 4, name: '赵医生', department: '神经内科', phone: '136****3456' },
-  { id: 5, name: '刘医生', department: '骨科', phone: '135****7890' },
-  { id: 6, name: '陈医生', department: '内分泌科', phone: '134****5678' },
-  { id: 7, name: '周医生', department: '肿瘤科', phone: '133****9012' }
+// 科室列表
+const departmentList = ref([
+  { label: '心血管科', value: '心血管科' },
+  { label: '内科', value: '内科' },
+  { label: '骨科', value: '骨科' },
+  { label: '神经科', value: '神经科' },
+  { label: '外科', value: '外科' },
+  { label: '呼吸内科', value: '呼吸内科' },
+  { label: '消化内科', value: '消化内科' },
+  { label: '泌尿科', value: '泌尿科' },
+  { label: '妇产科', value: '妇产科' },
+  { label: '儿科', value: '儿科' },
+  { label: '内分泌科', value: '内分泌科' },
+  { label: '肿瘤科', value: '肿瘤科' }
 ])
 
 // 数据名称选项配置
@@ -1177,10 +1177,6 @@ const generateShare = async () => {
     
     shareUrl.value = `${baseUrl}/share/medical-data/${dataId}?expiry=${expiry}${hasPassword}`
     
-    // 获取选中的医生信息
-    const selectedDoctor = shareForm.value.doctorId ? 
-      doctorList.value.find(d => d.id === Number(shareForm.value.doctorId)) : null
-    
     // 准备分享数据
     let shareDataToStore: any = {
       data: { ...currentShareData.value },
@@ -1193,13 +1189,8 @@ const generateShare = async () => {
         notes: shareForm.value.notes || '',
         sharedBy: '当前用户', // 实际应用中应该是真实的用户信息
         shareId: dataId,
-        // 医生信息
-        doctorInfo: selectedDoctor ? {
-          id: selectedDoctor.id,
-          name: selectedDoctor.name,
-          department: selectedDoctor.department,
-          phone: selectedDoctor.phone
-        } : null
+        // 科室信息
+        department: shareForm.value.department || null
       }
     }
     

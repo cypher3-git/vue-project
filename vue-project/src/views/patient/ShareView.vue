@@ -56,7 +56,7 @@
           
           <el-select 
             v-model="filters.department" 
-            placeholder="医生科室" 
+            placeholder="授权科室" 
             clearable 
             style="width: 150px; margin-right: 16px;"
           >
@@ -66,6 +66,11 @@
             <el-option label="骨科" value="骨科" />
             <el-option label="神经科" value="神经科" />
             <el-option label="外科" value="外科" />
+            <el-option label="呼吸内科" value="呼吸内科" />
+            <el-option label="消化内科" value="消化内科" />
+            <el-option label="泌尿科" value="泌尿科" />
+            <el-option label="妇产科" value="妇产科" />
+            <el-option label="儿科" value="儿科" />
           </el-select>
           
           <el-button @click="refreshData" :loading="loading">
@@ -77,7 +82,7 @@
         <div class="filter-right">
           <el-input
             v-model="filters.keyword"
-            placeholder="搜索医生姓名"
+            placeholder="搜索科室或数据名称"
             clearable
             style="width: 200px;"
           >
@@ -117,9 +122,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="doctorName" label="授权医生" width="100" />
-        
-        <el-table-column prop="department" label="科室" width="100" />
+        <el-table-column prop="department" label="授权科室" width="150" />
         
         <el-table-column label="权限级别" width="100">
           <template #default="scope">
@@ -226,24 +229,19 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="授权医生" prop="doctorId">
+        <el-form-item label="授权科室" prop="department">
           <el-select 
-            v-model="addShareForm.doctorId" 
-            placeholder="请选择医生" 
+            v-model="addShareForm.department" 
+            placeholder="请选择科室" 
             style="width: 100%"
             filterable
           >
             <el-option 
-              v-for="doctor in doctorList" 
-              :key="doctor.id" 
-              :label="`${doctor.name} - ${doctor.department}`" 
-              :value="doctor.id"
-            >
-              <div class="doctor-option">
-                <span>{{ doctor.name }}</span>
-                <span class="doctor-dept">{{ doctor.department }}</span>
-              </div>
-            </el-option>
+              v-for="dept in departmentList" 
+              :key="dept.value" 
+              :label="dept.label" 
+              :value="dept.value"
+            />
           </el-select>
         </el-form-item>
         
@@ -335,10 +333,7 @@
           <el-descriptions-item label="数据类型">
             {{ currentShareDetail.dataType }}
           </el-descriptions-item>
-          <el-descriptions-item label="授权医生">
-            {{ currentShareDetail.doctorName }}
-          </el-descriptions-item>
-          <el-descriptions-item label="医生科室">
+          <el-descriptions-item label="授权科室" :span="2">
             {{ currentShareDetail.department }}
           </el-descriptions-item>
           <el-descriptions-item label="权限级别">
@@ -438,7 +433,7 @@ const pagination = ref({
 const addShareFormRef = ref<FormInstance>()
 const addShareForm = ref({
   dataId: '',
-  doctorId: '',
+  department: '',
   permission: 'read',
   expiry: '7',
   password: '',
@@ -450,8 +445,8 @@ const addShareRules: FormRules = {
   dataId: [
     { required: true, message: '请选择要分享的数据', trigger: 'change' }
   ],
-  doctorId: [
-    { required: true, message: '请选择授权医生', trigger: 'change' }
+  department: [
+    { required: true, message: '请选择授权科室', trigger: 'change' }
   ],
   permission: [
     { required: true, message: '请选择权限级别', trigger: 'change' }
@@ -461,8 +456,19 @@ const addShareRules: FormRules = {
   ]
 }
 
-// 医生列表
-const doctorList = ref<any[]>([])
+// 科室列表
+const departmentList = ref([
+  { label: '心血管科', value: '心血管科' },
+  { label: '内科', value: '内科' },
+  { label: '骨科', value: '骨科' },
+  { label: '神经科', value: '神经科' },
+  { label: '外科', value: '外科' },
+  { label: '呼吸内科', value: '呼吸内科' },
+  { label: '消化内科', value: '消化内科' },
+  { label: '泌尿科', value: '泌尿科' },
+  { label: '妇产科', value: '妇产科' },
+  { label: '儿科', value: '儿科' }
+])
 
 // 可分享的数据列表
 const availableData = computed(() => medicalDataStore.files || [])
@@ -471,12 +477,7 @@ const availableData = computed(() => medicalDataStore.files || [])
 const loadShareList = async () => {
   loading.value = true
   try {
-    const userId = authStore.user?.id
-    if (!userId) {
-      throw new Error('用户未登录')
-    }
-    
-    const response = await shareApi.getSharesByPatientId(userId, {
+    const response = await shareApi.getMyShares({
       status: filters.value.status || undefined,
       page: pagination.value.current,
       pageSize: pagination.value.size
@@ -576,7 +577,7 @@ const filteredShareList = computed(() => {
   if (filters.value.keyword) {
     const keyword = filters.value.keyword.toLowerCase()
     result = result.filter(item => 
-      (item.doctorName && item.doctorName.toLowerCase().includes(keyword)) ||
+      (item.department && item.department.toLowerCase().includes(keyword)) ||
       (item.dataName && item.dataName.toLowerCase().includes(keyword))
     )
   }
@@ -597,7 +598,7 @@ const resetAddShareForm = () => {
   }
   addShareForm.value = {
     dataId: '',
-    doctorId: '',
+    department: '',
     permission: 'read',
     expiry: '7',
     password: '',
@@ -618,7 +619,7 @@ const handleAddShare = async () => {
     
     const response = await shareApi.createShare({
       fileId: addShareForm.value.dataId,
-      doctorId: addShareForm.value.doctorId,
+      department: addShareForm.value.department,
       permissions: [addShareForm.value.permission],
       expiresAt: expiryDate,
       accessPassword: addShareForm.value.password || undefined,
@@ -680,7 +681,7 @@ const copyShareLink = async (row: any) => {
 const revokeShare = async (row: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要撤销对"${row.doctorName}"的分享权限吗？撤销后该医生将无法继续访问相关数据。`,
+      `确定要撤销对"${row.department}"的分享权限吗？撤销后该科室将无法继续访问相关数据。`,
       '撤销分享权限',
       {
         confirmButtonText: '确定撤销',
