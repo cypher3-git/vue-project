@@ -115,16 +115,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // 修改密码（已废弃，系统不再使用密码）
-  /** @deprecated 系统已移除密码功能 */
-  const changePassword = async (passwordData: {
-    oldPassword: string
-    newPassword: string
-    confirmPassword: string
-  }): Promise<void> => {
-    ElMessage.warning('系统已移除密码功能，使用手机验证码登录')
-    throw new Error('系统已移除密码功能')
-  }
 
   // 检查token是否即将过期
   const checkTokenExpiration = (): boolean => {
@@ -173,7 +163,6 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     updateProfile,
-    changePassword,
     checkTokenExpiration,
     refreshToken
   }

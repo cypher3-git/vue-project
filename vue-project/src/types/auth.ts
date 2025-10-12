@@ -19,7 +19,7 @@ export interface PatientUser extends User {
   idCard?: string  // 身份证号（注册时使用，从中提取姓名、性别、出生日期）
 }
 
-// 医生用户扩展信息（简化版）
+// 医生用户扩展信息
 export interface DoctorUser extends User {
   role: 'doctor'
   idCard?: string      // 身份证号（注册时使用，验证身份）
@@ -32,18 +32,6 @@ export interface LoginCredentials {
   phone: string
   code: string
   role: UserRole
-}
-
-// 保留旧的类型定义以兼容性（已废弃，不再使用）
-/** @deprecated 已废弃，请使用 LoginCredentials */
-export interface PhoneCodeLoginCredentials extends LoginCredentials {}
-
-/** @deprecated 已废弃，密码登录已被移除 */
-export interface IdCardLoginCredentials {
-  idCard: string
-  password: string
-  role: UserRole
-  rememberMe?: boolean
 }
 
 // 注册数据基础接口（简化版：身份证号+手机号+验证码）
@@ -91,19 +79,6 @@ export interface RegisterResponse {
   }
 }
 
-// 用户资料更新数据（简化版 - MVP暂不支持资料更新功能）
-export interface UpdateProfileData {
-  // MVP阶段暂不支持更新资料
-  // 如需扩展，可添加必要字段
-}
-
-// 密码修改数据（已废弃，系统不再使用密码）
-/** @deprecated 已废弃，系统已移除密码功能 */
-export interface ChangePasswordData {
-  oldPassword: string
-  newPassword: string
-  confirmPassword: string
-}
 
 // JWT Token 载荷
 export interface TokenPayload {
@@ -119,17 +94,9 @@ export interface VerificationCode {
   type: 'phone'
   phone: string
   code: string
-  purpose: 'register' | 'login' | 'change_phone' | 'bind_phone'
+  purpose: 'register' | 'login'  // 仅支持注册和登录
 }
 
-// 重置密码数据（已废弃，系统不再使用密码）
-/** @deprecated 已废弃，系统已移除密码功能 */
-export interface ResetPasswordData {
-  phone: string
-  code: string
-  newPassword: string
-  confirmPassword: string
-}
 
 // 权限申请相关
 export interface PermissionRequest {

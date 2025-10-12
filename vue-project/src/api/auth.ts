@@ -287,7 +287,7 @@ export const refreshToken = async (): Promise<LoginResponse> => {
 /**
  * ✅ 发送手机验证码
  * 
- * @description 向指定手机号发送验证码，用于注册、登录、修改手机号等场景
+ * @description 向指定手机号发送验证码，用于注册和登录场景
  * 
  * @param verificationData - 验证码发送信息
  * @param verificationData.type - 验证码类型（固定为'phone'）
@@ -295,17 +295,14 @@ export const refreshToken = async (): Promise<LoginResponse> => {
  * @param verificationData.purpose - 验证码用途
  *   - 'register': 注册
  *   - 'login': 登录
- *   - 'change_phone': 更换手机号
- *   - 'bind_phone': 绑定手机号
  * 
  * @returns Promise<ApiResponse> - 发送结果
  * 
  * @后端处理逻辑:
  * 1. 验证手机号格式（11位，1开头）
  * 2. 根据purpose进行业务校验：
- *    - register: 检查手机号是否已注册
+ *    - register: 检查手机号是否未注册
  *    - login: 检查手机号是否已注册
- *    - change_phone: 验证当前用户身份
  * 3. 检查发送频率限制：
  *    - 同一手机号60秒内只能发送一次
  *    - 同一IP每小时最多发送10次

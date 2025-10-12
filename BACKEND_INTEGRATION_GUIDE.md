@@ -202,7 +202,7 @@ type VerificationCode struct {
     ID        string    `json:"id" gorm:"primaryKey"`
     Phone     string    `json:"phone" gorm:"not null;index"`
     Code      string    `json:"code" gorm:"not null"`
-    Purpose   string    `json:"purpose"` // "register" | "login" | "change_phone" | "bind_phone"
+    Purpose   string    `json:"purpose"` // "register" | "login" （仅支持注册和登录）
     IsUsed    bool      `json:"isUsed" gorm:"default:false"`
     CreatedAt time.Time `json:"createdAt"`
     ExpiresAt time.Time `json:"expiresAt"`
