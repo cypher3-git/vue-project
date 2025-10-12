@@ -22,8 +22,9 @@ export interface PatientUser extends User {
 // 医生用户扩展信息（简化版）
 export interface DoctorUser extends User {
   role: 'doctor'
-  department: string  // 科室（注册时必填）
-  hospital?: string   // 医院（可选）
+  idCard?: string      // 身份证号（注册时使用，验证身份）
+  department: string   // 科室（注册时必填）
+  hospital?: string    // 医院（可选）
 }
 
 // 登录凭证（仅保留手机号验证码登录）

@@ -70,14 +70,16 @@ type PatientUser struct {
 
 ```go
 type DoctorUser struct {
-    UserID     string    `json:"userId" gorm:"primaryKey"`     // 用户ID
-    Department string    `json:"department" gorm:"not null"`   // 科室（注册时必填）
-    Hospital   string    `json:"hospital,omitempty"`           // 医院（可选）
+    UserID     string    `json:"userId" gorm:"primaryKey"`        // 用户ID
+    IDCard     string    `json:"idCard,omitempty" gorm:"unique"`  // 身份证号（注册时使用，验证身份）
+    Department string    `json:"department" gorm:"not null"`      // 科室（注册时必填）
+    Hospital   string    `json:"hospital,omitempty"`              // 医院（可选）
     CreatedAt  time.Time `json:"createdAt" gorm:"autoCreateTime"`
 }
 ```
 
 **简化说明**：
+- 保留 `IDCard`（身份证号）：注册时必填，用于验证医生身份
 - 保留 `Department`（科室）：注册时必填，核心字段
 - 保留 `Hospital`（医院）：可选，便于识别医生
 - 移除 `LicenseNumber`（执业证号）：认证相关，非核心
