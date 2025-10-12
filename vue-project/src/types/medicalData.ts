@@ -21,6 +21,13 @@ export type FileStatus = 'uploading' | 'processing' | 'completed' | 'failed'
 export type AuthorizationStatus = 'not-requested' | 'pending' | 'approved' | 'rejected' | 'expired'
 
 // 医疗文件基础接口
+// 【用于】多个API的响应部分：
+// - GET /api/medical-files 文件列表查询（响应）
+// - POST /api/medical-files 文件上传（响应）
+// - GET /api/medical-files/:id 文件详情查询（响应）
+// - PUT /api/medical-files/:id 文件更新（响应）
+// - GET /api/doctor/medical-data 医生查看可见数据（响应）
+// - GET /api/patient/medical-files 患者查看自己的数据（响应）
 export interface MedicalFile {
   id: string                              // 文件唯一标识
   title: string                           // 文件标题
@@ -50,6 +57,8 @@ export interface MedicalFile {
 }
 
 // 文件上传数据
+// 【用于】POST /api/medical-files 文件上传接口（请求体）
+// 患者端上传医疗数据时使用
 export interface UploadData {
   file: File                    // 文件对象
   title: string                 // 文件标题
@@ -58,6 +67,8 @@ export interface UploadData {
 }
 
 // 文件更新数据
+// 【用于】PUT /api/medical-files/:id 文件更新接口（请求体）
+// 患者端修改医疗数据信息时使用
 export interface UpdateFileData {
   title?: string                // 文件标题（可选）
   description?: string          // 文件描述（可选）
@@ -65,6 +76,8 @@ export interface UpdateFileData {
 }
 
 // 访问记录
+// 【用于】GET /api/access-records 访问记录查询接口（响应）
+// 患者端查看谁访问了自己的数据，医生端查看自己的访问历史
 export interface AccessRecord {
   id: string                                // 记录ID
   fileId: string                            // 文件ID
@@ -92,6 +105,8 @@ export interface AccessRecord {
 }
 
 // 文件查询参数
+// 【用于】GET /api/medical-files 文件列表查询接口（请求参数）
+// 支持分页、筛选、排序等功能
 export interface FileQueryParams {
   category?: FileCategory                                       // 文件类别（可选）
   keyword?: string                                              // 搜索关键词（可选）
@@ -105,6 +120,8 @@ export interface FileQueryParams {
 }
 
 // 文件统计数据
+// 【用于】GET /api/statistics/files 文件统计查询接口（响应）
+// 患者端查看数据统计信息
 export interface FileStatistics {
   totalFiles: number              // 文件总数
   totalSize: number               // 总大小（字节）
@@ -127,6 +144,8 @@ export interface FileStatistics {
 }
 
 // 批量操作数据
+// 【用于】POST /api/medical-files/batch 批量操作接口（请求体）
+// 患者端批量删除或移动文件类别
 export interface BatchOperationData {
   fileIds: string[]                   // 文件ID列表
   operation: 'delete' | 'move_category'  // 操作类型
@@ -136,6 +155,8 @@ export interface BatchOperationData {
 }
 
 // 医疗数据导出请求
+// 【用于】POST /api/medical-files/export 数据导出接口（请求体）
+// 患者端批量导出医疗数据为ZIP或PDF
 export interface ExportRequest {
   fileIds?: string[]              // 文件ID列表（可选）
   category?: FileCategory         // 文件类别（可选）
@@ -148,6 +169,8 @@ export interface ExportRequest {
 }
 
 // 文件预览配置
+// 【用于】GET /api/config/preview 获取预览配置（响应）
+// 前端获取文件预览的相关配置信息
 export interface PreviewConfig {
   supportedTypes: string[]        // 支持的文件类型列表
   maxPreviewSize: number          // 最大预览大小（字节）
@@ -159,6 +182,8 @@ export interface PreviewConfig {
 }
 
 // 上传配置
+// 【用于】GET /api/config/upload 获取上传配置（响应）
+// 前端获取文件上传的相关配置和限制
 export interface UploadConfig {
   maxFileSize: number             // 最大文件大小（字节）
   allowedTypes: string[]          // 允许的文件MIME类型
@@ -168,6 +193,8 @@ export interface UploadConfig {
 }
 
 // 数据溯源信息
+// 【用于】GET /api/medical-files/:id/trace 数据溯源查询接口（响应）
+// 查看文件的完整操作历史和访问记录
 export interface DataTraceability {
   fileId: string
   creationTrace: {
@@ -192,6 +219,8 @@ export interface DataTraceability {
 }
 
 // 数据完整性验证
+// 【用于】GET /api/medical-files/:id/integrity 文件完整性验证接口（响应）
+// 验证文件是否被篡改
 export interface IntegrityCheck {
   fileId: string
   checksum: string
@@ -201,7 +230,10 @@ export interface IntegrityCheck {
   lastModified: string
 }
 
-// API响应类型
+// ==================== API 响应类型 ====================
+
+// 文件列表响应
+// 【用于】GET /api/medical-files 文件列表查询接口（响应）
 export interface FileListResponse {
   success: boolean          // 是否成功
   data: {
@@ -214,12 +246,16 @@ export interface FileListResponse {
   message: string           // 提示消息
 }
 
+// 文件上传响应
+// 【用于】POST /api/medical-files 文件上传接口（响应）
 export interface FileUploadResponse {
   success: boolean          // 是否成功
   data: MedicalFile         // 上传的文件信息
   message: string           // 提示消息
 }
 
+// 访问记录响应
+// 【用于】GET /api/access-records 访问记录查询接口（响应）
 export interface AccessHistoryResponse {
   success: boolean          // 是否成功
   data: {
@@ -231,6 +267,8 @@ export interface AccessHistoryResponse {
   message: string           // 提示消息
 }
 
+// 文件统计响应
+// 【用于】GET /api/statistics/files 文件统计查询接口（响应）
 export interface FileStatisticsResponse {
   success: boolean          // 是否成功
   data: FileStatistics      // 统计数据
