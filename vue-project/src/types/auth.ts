@@ -98,44 +98,44 @@ export interface VerificationCode {
 }
 
 
-// 权限申请相关
+// 授权申请相关
 export interface PermissionRequest {
-  id: string
-  doctorId: string
-  patientId: string
-  requestReason: string
-  requestedPermissions: string[]
-  expiresAt: string
-  status: 'pending' | 'approved' | 'rejected' | 'expired'
-  createdAt: string
-  updatedAt: string
+  id: string                                                          // 申请记录ID
+  doctorId: string                                                    // 医生ID
+  patientId: string                                                   // 患者ID
+  requestReason: string                                               // 申请理由
+  requestedPermissions: string[]                                      // 申请的权限列表
+  expiresAt: string                                                   // 授权过期时间
+  status: 'pending' | 'approved' | 'rejected' | 'expired'            // 状态：待审批/已批准/已拒绝/已过期
+  createdAt: string                                                   // 创建时间
+  updatedAt: string                                                   // 更新时间
   doctor: {
-    id: string
-    name: string
-    hospital: string
-    department: string
+    id: string                                                        // 医生ID
+    name: string                                                      // 医生姓名
+    hospital: string                                                  // 医院名称
+    department: string                                                // 科室
   }
-  patient?: {
-    id: string
-    name: string
+  patient?: {                                                         // 患者信息（可选，隐私保护）
+    id: string                                                        // 患者ID
+    name: string                                                      // 患者姓名
   }
 }
 
 // 授权记录
 export interface AuthorizationRecord {
-  id: string
-  doctorId: string
-  patientId: string
-  permissions: string[]
-  grantedAt: string
-  expiresAt: string
-  isActive: boolean
-  revokedAt?: string
+  id: string                    // 授权记录ID
+  doctorId: string              // 医生ID
+  patientId: string             // 患者ID
+  permissions: string[]         // 已授予的权限列表
+  grantedAt: string             // 授权时间
+  expiresAt: string             // 过期时间
+  isActive: boolean             // 是否有效（未过期且未撤销）
+  revokedAt?: string            // 撤销时间（可选）
   doctor: {
-    id: string
-    name: string
-    hospital: string
-    department: string
+    id: string                  // 医生ID
+    name: string                // 医生姓名
+    hospital: string            // 医院名称
+    department: string          // 科室
   }
 }
 
