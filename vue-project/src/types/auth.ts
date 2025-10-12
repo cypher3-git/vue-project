@@ -6,16 +6,11 @@ export type Gender = 'male' | 'female'
 
 // 基础用户信息接口
 export interface User {
-  id: string
-  name: string
-  phone: string
-  role: UserRole
-  avatar?: string
-  isActive: boolean
-  isPhoneVerified: boolean
-  lastLoginAt?: string
-  createdAt: string
-  updatedAt: string
+  id: string          // 用户唯一标识
+  name: string        // 用户姓名
+  phone: string       // 手机号
+  role: UserRole      // 用户角色（patient/doctor）
+  createdAt: string   // 创建时间（数据库自动生成，方便调试）
 }
 
 // 患者用户扩展信息
@@ -34,18 +29,11 @@ export interface PatientUser extends User {
   allergies?: string[]
 }
 
-// 医生用户扩展信息
+// 医生用户扩展信息（简化版）
 export interface DoctorUser extends User {
   role: 'doctor'
-  licenseNumber?: string // 可选，注册时不收集
-  hospital?: string // 可选，注册时不收集
-  department?: string // 可选，注册时不收集
-  title?: string // 职称
-  specialties?: string[] // 专业领域
-  experience?: number // 从业年限
-  qualification?: string // 学历
-  isVerified: boolean // 是否已通过医生认证
-  verifiedAt?: string
+  department: string  // 科室（注册时必填）
+  hospital?: string   // 医院（可选）
 }
 
 // 登录凭证（仅保留手机号验证码登录）

@@ -47,18 +47,21 @@
 
 ```go
 type User struct {
-    ID              string    `json:"id" gorm:"primaryKey"`
-    Name            string    `json:"name"`
-    Phone           string    `json:"phone" gorm:"unique;not null"`
-    Role            string    `json:"role"` // "patient" | "doctor"
-    Avatar          string    `json:"avatar,omitempty"`
-    IsActive        bool      `json:"isActive" gorm:"default:true"`
-    IsPhoneVerified bool      `json:"isPhoneVerified" gorm:"default:false"`
-    LastLoginAt     time.Time `json:"lastLoginAt,omitempty"`
-    CreatedAt       time.Time `json:"createdAt"`
-    UpdatedAt       time.Time `json:"updatedAt"`
+    ID        string    `json:"id" gorm:"primaryKey"`           // 用户唯一标识
+    Name      string    `json:"name" gorm:"not null"`           // 用户姓名
+    Phone     string    `json:"phone" gorm:"unique;not null"`   // 手机号（唯一）
+    Role      string    `json:"role" gorm:"not null"`           // 用户角色："patient" | "doctor"
+    CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"` // 创建时间（自动生成）
 }
 ```
+
+**简化说明**：
+- 移除 `Avatar`（头像）：非核心功能
+- 移除 `IsActive`（激活状态）：基础版不需要账户封禁
+- 移除 `IsPhoneVerified`（手机验证）：验证码登录本身已验证
+- 移除 `LastLoginAt`（最后登录）：统计功能，非必需
+- 移除 `UpdatedAt`（更新时间）：基础版不需要
+- 保留 `CreatedAt`（创建时间）：数据库自动生成，方便调试
 
 ### 2.2 患者用户扩展模型 (PatientUser)
 
@@ -77,26 +80,23 @@ type PatientUser struct {
 }
 ```
 
-### 2.3 医生用户扩展模型 (DoctorUser)
+### 2.3 医生用户扩展模型 (DoctorUser) - 简化版
 
 ```go
 type DoctorUser struct {
-    UserID         string    `json:"userId" gorm:"primaryKey"`
-    Department     string    `json:"department" gorm:"not null"`             // 科室，注册时必填
-    LicenseNumber  string    `json:"licenseNumber,omitempty" gorm:"unique"`  // 可选，注册后补充
-    Hospital       string    `json:"hospital,omitempty"`                     // 可选，注册后补充
-    Title          string    `json:"title,omitempty"`                        // 职称
-    Specialties    string    `json:"specialties,omitempty"`                  // JSON array
-    Experience     int       `json:"experience,omitempty"`                   // 从业年限
-    Qualification  string    `json:"qualification,omitempty"`
-    IsVerified     bool      `json:"isVerified" gorm:"default:false"`
-    VerifiedAt     time.Time `json:"verifiedAt,omitempty"`
-    CreatedAt      time.Time `json:"createdAt"`
-    UpdatedAt      time.Time `json:"updatedAt"`
+    UserID     string    `json:"userId" gorm:"primaryKey"`     // 用户ID
+    Department string    `json:"department" gorm:"not null"`   // 科室（注册时必填）
+    Hospital   string    `json:"hospital,omitempty"`           // 医院（可选）
+    CreatedAt  time.Time `json:"createdAt" gorm:"autoCreateTime"`
 }
 ```
 
-**注意**: 医生注册时需要选择科室（必填），其他信息如医师执业证号、医院名称等可在注册后通过个人资料更新接口补充。
+**简化说明**：
+- 保留 `Department`（科室）：注册时必填，核心字段
+- 保留 `Hospital`（医院）：可选，便于识别医生
+- 移除 `LicenseNumber`（执业证号）：认证相关，非核心
+- 移除 `Title`、`Specialties`、`Experience`、`Qualification`：详细信息，非必需
+- 移除 `IsVerified`、`VerifiedAt`：认证功能，基础版不需要
 
 ### 2.4 医疗文件模型 (MedicalFile)
 
