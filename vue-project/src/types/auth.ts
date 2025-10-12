@@ -16,31 +16,31 @@ export interface User {
 // 患者用户扩展信息
 export interface PatientUser extends User {
   role: 'patient'
-  idCard?: string  // 身份证号（注册时使用，从中提取姓名、性别、出生日期）
+  idCard: string  // 身份证号（注册时使用，从中提取姓名、性别、出生日期）
 }
 
 // 医生用户扩展信息
 export interface DoctorUser extends User {
   role: 'doctor'
-  idCard?: string      // 身份证号（注册时使用，验证身份）
+  idCard: string      // 身份证号（注册时使用，验证身份）
   department: string   // 科室（注册时必填）
   hospital?: string    // 医院（可选）
 }
 
 // 登录凭证（仅保留手机号验证码登录）
 export interface LoginCredentials {
-  phone: string
-  code: string
-  role: UserRole
+  phone: string     // 手机号
+  code: string      // 短信验证码
+  role: UserRole    // 用户角色（patient/doctor）
 }
 
 // 注册数据基础接口（简化版：身份证号+手机号+验证码）
 export interface RegisterDataBase {
-  phone: string
-  code: string
-  idCard: string
-  role: UserRole
-  agreeToTerms: boolean
+  phone: string         // 手机号
+  code: string          // 短信验证码
+  idCard: string        // 身份证号（18位）
+  role: UserRole        // 用户角色（patient/doctor）
+  agreeToTerms: boolean // 是否同意服务条款
 }
 
 // 患者注册数据
@@ -59,42 +59,42 @@ export type RegisterData = PatientRegisterData | DoctorRegisterData
 
 // 登录响应数据
 export interface LoginResponse {
-  success: boolean
-  message: string
+  success: boolean  //是否登陆成功
+  message: string   //提示消息（如"登录成功"或"手机号不存在"）
   data: {
     user: User
-    token: string
-    refreshToken: string
-    expiresIn: number
+    token: string   //JWT Token
+    refreshToken: string    //刷新Token
+    expiresIn: number   //Token过期时间
   }
 }
 
 // 注册响应数据
 export interface RegisterResponse {
-  success: boolean
-  message: string
+  success: boolean  // 注册是否成功
+  message: string   // 提示消息（如"注册成功"或"手机号已注册"）
   data?: {
-    userId: string
-    phone: string
+    userId: string  // 新注册用户的ID
+    phone: string   // 注册的手机号
   }
 }
 
 
 // JWT Token 载荷
 export interface TokenPayload {
-  sub: string // 用户ID
-  phone: string
-  role: UserRole
-  iat: number // 签发时间
-  exp: number // 过期时间
+  sub: string       // 用户ID
+  phone: string     // 手机号
+  role: UserRole    // 用户角色
+  iat: number       // 签发时间（Unix时间戳）
+  exp: number       // 过期时间（Unix时间戳）
 }
 
 // 验证码相关
 export interface VerificationCode {
-  type: 'phone'
-  phone: string
-  code: string
-  purpose: 'register' | 'login'  // 仅支持注册和登录
+  type: 'phone'                          // 验证码类型（固定为phone）
+  phone: string                          // 手机号
+  code: string                           // 验证码（6位数字）
+  purpose: 'register' | 'login'          // 用途：注册或登录
 }
 
 
@@ -141,18 +141,18 @@ export interface AuthorizationRecord {
 
 // API响应基础接口
 export interface ApiResponse<T = any> {
-  success: boolean
-  message: string
-  data?: T
-  code?: number
-  errors?: Record<string, string[]>
+  success: boolean                      // 请求是否成功
+  message: string                       // 提示消息
+  data?: T                              // 响应数据（泛型）
+  code?: number                         // 业务状态码
+  errors?: Record<string, string[]>     // 验证错误信息（字段名 -> 错误列表）
 }
 
 // 分页数据
 export interface PaginatedData<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
+  items: T[]            // 当前页数据列表
+  total: number         // 总记录数
+  page: number          // 当前页码（从1开始）
+  pageSize: number      // 每页记录数
+  totalPages: number    // 总页数
 }
