@@ -36,8 +36,8 @@
 
 ### 1.2 角色权限
 
-- `patient`: 患者角色 - 可管理自己的医疗数据、分享数据给医生
-- `doctor`: 医生角色 - 可查看已授权的患者数据、申请数据访问权限
+- `patient`: 患者角色 - 可管理自己的医疗数据、审批医生的授权请求
+- `doctor`: 医生角色 - 可查看已授权的数据详情、发起数据访问授权请求
 
 ---
 
@@ -102,86 +102,112 @@ type DoctorUser struct {
 
 ```go
 type MedicalFile struct {
-    ID           string    `json:"id" gorm:"primaryKey"`
-    Title        string    `json:"title" gorm:"not null"`
-    Description  string    `json:"description"`
-    FileName     string    `json:"fileName" gorm:"not null"`
-    OriginalName string    `json:"originalName" gorm:"not null"`
-    FileSize     int64     `json:"fileSize"`
-    FileType     string    `json:"fileType"`  // 文件扩展名
-    MimeType     string    `json:"mimeType"`
-    Category     string    `json:"category"`  // "report" | "image" | "prescription" | "other"
-    Status       string    `json:"status" gorm:"default:completed"` // "uploading" | "processing" | "completed" | "failed"
-    UploadTime   time.Time `json:"uploadTime"`
-    UpdatedAt    time.Time `json:"updatedAt"`
-    PatientID    string    `json:"patientId" gorm:"not null;index"`
-    IsShared     bool      `json:"isShared" gorm:"default:false"`
-    ShareCount   int       `json:"shareCount" gorm:"default:0"`
-    DownloadCount int      `json:"downloadCount" gorm:"default:0"`
-    ViewCount    int       `json:"viewCount" gorm:"default:0"`
-    ThumbnailURL string    `json:"thumbnailUrl,omitempty"`
-    PreviewURL   string    `json:"previewUrl,omitempty"`
-    Checksum     string    `json:"checksum,omitempty"`
-    IsVerified   bool      `json:"isVerified" gorm:"default:false"`
-    VerifiedAt   time.Time `json:"verifiedAt,omitempty"`
+    ID                 string    `json:"id" gorm:"primaryKey"`
+    Title              string    `json:"title" gorm:"not null"`
+    Description        string    `json:"description"`
+    FileName           string    `json:"fileName" gorm:"not null"`
+    OriginalName       string    `json:"originalName" gorm:"not null"`
+    FileSize           int64     `json:"fileSize"`
+    FileType           string    `json:"fileType"`  // 文件扩展名
+    MimeType           string    `json:"mimeType"`
+    Category           string    `json:"category"`  // "report" | "image" | "prescription" | "medication" | "other"
+    Status             string    `json:"status" gorm:"default:completed"` // "uploading" | "processing" | "completed" | "failed"
+    UploadTime         time.Time `json:"uploadTime"`
+    UpdatedAt          time.Time `json:"updatedAt"`
+    PatientID          string    `json:"patientId" gorm:"not null;index"`
+    // 授权相关字段（替代分享字段）
+    AuthStatus         string    `json:"authStatus" gorm:"default:not-requested"` // "not-requested" | "pending" | "authorized" | "rejected" | "expired"
+    AuthorizationCount int       `json:"authorizationCount" gorm:"default:0"`  // 授权请求数量
+    // 访问统计
+    DownloadCount      int       `json:"downloadCount" gorm:"default:0"`
+    ViewCount          int       `json:"viewCount" gorm:"default:0"`
+    // 文件预览和验证
+    ThumbnailURL       string    `json:"thumbnailUrl,omitempty"`
+    PreviewURL         string    `json:"previewUrl,omitempty"`
+    Checksum           string    `json:"checksum,omitempty"`
+    IsVerified         bool      `json:"isVerified" gorm:"default:false"`
+    VerifiedAt         time.Time `json:"verifiedAt,omitempty"`
 }
 ```
 
-### 2.5 分享记录模型 (ShareRecord)
+**重要变更**:
+- 移除 `IsShared` 和 `ShareCount` 字段
+- 新增 `AuthStatus` 字段表示授权状态
+- 新增 `AuthorizationCount` 字段记录授权请求数量
+- Category 新增 `medication` 类型（用药记录）
+
+### 2.5 授权请求模型 (AuthorizationRequest)
 
 ```go
-type ShareRecord struct {
-    ID           string    `json:"id" gorm:"primaryKey"`
-    FileID       string    `json:"fileId" gorm:"not null;index"`
-    DoctorID     string    `json:"doctorId" gorm:"not null;index"`
-    PatientID    string    `json:"patientId" gorm:"not null;index"`
-    Permissions  string    `json:"permissions"` // JSON array: ["view", "download", "share"]
-    ShareReason  string    `json:"shareReason,omitempty"`
-    ExpiresAt    time.Time `json:"expiresAt"`
-    Status       string    `json:"status" gorm:"default:active"` // "active" | "expired" | "revoked"
-    CreatedAt    time.Time `json:"createdAt"`
-    RevokedAt    time.Time `json:"revokedAt,omitempty"`
-    AccessCount  int       `json:"accessCount" gorm:"default:0"`
-    LastAccessAt time.Time `json:"lastAccessAt,omitempty"`
+type AuthorizationRequest struct {
+    ID              string    `json:"id" gorm:"primaryKey"`
+    DoctorID        string    `json:"doctorId" gorm:"not null;index"`
+    PatientID       string    `json:"patientId" gorm:"not null;index"`
+    DataID          string    `json:"dataId" gorm:"not null;index"`  // 医疗数据ID
+    Reason          string    `json:"reason" gorm:"not null"`        // 申请原因
+    Purpose         string    `json:"purpose" gorm:"not null"`       // 申请目的: "diagnosis" | "evaluation" | "research" | "consultation" | "other"
+    Status          string    `json:"status" gorm:"default:pending"` // "pending" | "approved" | "rejected" | "expired"
+    RequestedAt     time.Time `json:"requestedAt"`
+    ProcessedAt     time.Time `json:"processedAt,omitempty"`
+    ExpiresAt       time.Time `json:"expiresAt,omitempty"`          // 授权有效期（审批通过后设置）
+    RejectReason    string    `json:"rejectReason,omitempty"`       // 拒绝原因
+    Notes           string    `json:"notes,omitempty"`              // 患者审批备注
 }
 ```
+
+**授权流程说明**:
+1. 医生发现患者上传的医疗数据（数据列表中数据对所有医生可见，但未授权时看不到所属患者）
+2. 医生对感兴趣的数据发起授权请求，说明访问原因和目的
+3. 患者在"授权管理"页面收到请求，可以查看数据详情和医生信息
+4. 患者选择"同意"或"拒绝"授权请求
+5. 同意后，医生可以在"数据管理"页面查看该数据的完整信息（包括所属患者）
+6. 医生可以点击"查看数据"访问数据内容
 
 ### 2.6 访问记录模型 (AccessRecord)
 
 ```go
 type AccessRecord struct {
-    ID         string    `json:"id" gorm:"primaryKey"`
-    FileID     string    `json:"fileId" gorm:"not null;index"`
-    DoctorID   string    `json:"doctorId" gorm:"not null;index"`
-    PatientID  string    `json:"patientId" gorm:"not null;index"`
-    ShareID    string    `json:"shareId" gorm:"not null;index"`
-    AccessType string    `json:"accessType"` // "view" | "download" | "preview"
-    AccessTime time.Time `json:"accessTime"`
-    IPAddress  string    `json:"ipAddress,omitempty"`
-    UserAgent  string    `json:"userAgent,omitempty"`
-    Duration   int       `json:"duration,omitempty"` // 访问持续时间（秒）
+    ID                string    `json:"id" gorm:"primaryKey"`
+    DataID            string    `json:"dataId" gorm:"not null;index"`  // 医疗数据ID
+    DoctorID          string    `json:"doctorId" gorm:"not null;index"`
+    PatientID         string    `json:"patientId" gorm:"not null;index"`
+    AuthorizationID   string    `json:"authorizationId" gorm:"not null;index"` // 授权请求ID
+    AccessType        string    `json:"accessType"` // "view" | "download" | "preview"
+    AccessTime        time.Time `json:"accessTime"`
+    IPAddress         string    `json:"ipAddress,omitempty"`
+    UserAgent         string    `json:"userAgent,omitempty"`
+    Duration          int       `json:"duration,omitempty"` // 访问持续时间（秒）
 }
 ```
 
-### 2.7 权限申请模型 (PermissionRequest)
+**重要变更**:
+- `FileID` 改为 `DataID`（统一使用"数据"概念）
+- `ShareID` 改为 `AuthorizationID`（基于授权而非分享）
+
+### 2.7 医生统计数据模型 (DoctorStatistics)
 
 ```go
-type PermissionRequest struct {
-    ID                   string    `json:"id" gorm:"primaryKey"`
-    DoctorID             string    `json:"doctorId" gorm:"not null;index"`
-    PatientID            string    `json:"patientId" gorm:"not null;index"`
-    RequestReason        string    `json:"requestReason" gorm:"not null"`
-    RequestedFiles       string    `json:"requestedFiles,omitempty"` // JSON array
-    RequestedPermissions string    `json:"requestedPermissions"`     // JSON array
-    ExpiresAt            time.Time `json:"expiresAt"`
-    Status               string    `json:"status" gorm:"default:pending"` // "pending" | "approved" | "rejected" | "expired"
-    CreatedAt            time.Time `json:"createdAt"`
-    ProcessedAt          time.Time `json:"processedAt,omitempty"`
-    RejectReason         string    `json:"rejectReason,omitempty"`
+type DoctorStatistics struct {
+    TotalData         int       `json:"totalData"`         // 可见数据总数
+    AuthorizedData    int       `json:"authorizedData"`    // 已授权数据数
+    PendingData       int       `json:"pendingData"`       // 待审批数据数
+    TodayViewed       int       `json:"todayViewed"`       // 今日已查看数
 }
 ```
 
-### 2.8 验证码模型 (VerificationCode)
+### 2.8 患者统计数据模型 (PatientStatistics)
+
+```go
+type PatientStatistics struct {
+    TotalFiles        int                    `json:"totalFiles"`        // 总数据条目
+    AuthorizedFiles   int                    `json:"authorizedFiles"`   // 授权中数据（待审批+已授权）
+    RecentUploads     int                    `json:"recentUploads"`     // 本月新增
+    FilesByCategory   map[string]int         `json:"filesByCategory"`   // 按类型统计
+    StorageUsed       string                 `json:"storageUsed"`       // 存储使用量
+}
+```
+
+### 2.9 验证码模型 (VerificationCode)
 
 ```go
 type VerificationCode struct {
@@ -197,9 +223,42 @@ type VerificationCode struct {
 
 ---
 
-## 三、API 路由清单
+## 三、核心功能设计说明
 
-### 3.1 认证相关 (Auth API) - `/api/auth`
+### 3.1 数据授权机制（核心功能）
+
+**设计理念**: 患者上传的医疗数据自动对所有医生可见（仅数据基本信息），但医生需要获得患者授权才能查看数据详情和所属患者信息。
+
+**数据可见性规则**:
+
+| 授权状态 | 医生可见信息 | 医生可执行操作 |
+|---------|------------|--------------|
+| `not-requested` | 数据名称、类型、上传时间、数据ID | 发起授权请求 |
+| `pending` | 数据名称、类型、上传时间、数据ID | 等待患者审批 |
+| `approved` | 完整信息（包括所属患者、数据内容） | 查看数据、下载数据 |
+| `rejected` | 数据名称、类型、上传时间、数据ID | 重新发起授权请求 |
+| `expired` | 数据名称、类型、上传时间、数据ID | 重新发起授权请求 |
+
+**授权流程**:
+1. **患者上传数据** → 数据基本信息对所有医生可见
+2. **医生发起授权** → 创建授权请求，说明原因
+3. **患者审批** → 同意/拒绝授权请求
+4. **医生访问** → 授权通过后可查看完整数据
+
+**与传统分享机制的区别**:
+- ❌ 旧模式：患者主动分享给指定医生
+- ✅ 新模式：数据自动可见，医生申请授权，患者审批
+
+**优势**:
+- 医生能发现更多患者数据，提升诊疗效率
+- 患者完全掌控数据访问权限
+- 数据流转过程透明、可追溯
+
+---
+
+## 四、API 路由清单
+
+### 4.1 认证相关 (Auth API) - `/api/auth`
 
 | 方法   | 路径                        | 说明           | 是否需要认证 |
 |--------|----------------------------|----------------|--------------|
@@ -214,7 +273,7 @@ type VerificationCode struct {
 | POST   | /auth/bind-phone            | 绑定手机号     | ✅ |
 | POST   | /auth/upload-avatar         | 上传头像       | ✅ |
 
-#### 3.1.1 发送验证码
+#### 4.1.1 发送验证码
 
 **请求**: `POST /api/auth/send-verification-code`
 
@@ -237,7 +296,7 @@ type VerificationCode struct {
 }
 ```
 
-#### 3.1.2 用户注册
+#### 4.1.2 用户注册
 
 **请求**: `POST /api/auth/register`
 
@@ -279,7 +338,7 @@ type VerificationCode struct {
 }
 ```
 
-#### 3.1.3 用户登录
+#### 4.1.3 用户登录
 
 **请求**: `POST /api/auth/login`
 
@@ -317,7 +376,7 @@ type VerificationCode struct {
 }
 ```
 
-#### 3.1.4 获取当前用户信息
+#### 4.1.4 获取当前用户信息
 
 **请求**: `GET /api/auth/me`
 
@@ -341,7 +400,7 @@ type VerificationCode struct {
 }
 ```
 
-#### 3.1.5 更新个人资料
+#### 4.1.5 更新个人资料
 
 **请求**: `PUT /api/auth/profile`
 
@@ -374,7 +433,7 @@ type VerificationCode struct {
 
 ---
 
-### 3.2 医疗数据管理 (Medical Data API) - `/api/medical-data`
+### 4.2 医疗数据管理 (Medical Data API) - `/api/medical-data`
 
 | 方法   | 路径                          | 说明               | 角色要求 |
 |--------|------------------------------|--------------------|---------| 
@@ -385,20 +444,19 @@ type VerificationCode struct {
 | DELETE | /medical-data/files/:id      | 删除文件           | patient |
 | GET    | /medical-data/download/:id   | 下载文件           | patient |
 | GET    | /medical-data/preview/:id    | 获取文件预览URL     | patient |
-| GET    | /medical-data/statistics     | 获取数据统计        | patient |
 | POST   | /medical-data/batch-delete   | 批量删除文件        | patient |
 
-#### 3.2.1 获取文件列表
+#### 4.2.1 获取文件列表
 
 **请求**: `GET /api/medical-data/files`
 
 **Query 参数**:
-- `category`: 文件类别 (report | image | prescription | other)
+- `category`: 文件类别 (report | image | prescription | medication | other)
 - `keyword`: 搜索关键词
 - `status`: 文件状态 (completed | processing | failed)
 - `startDate`: 开始日期
 - `endDate`: 结束日期
-- `isShared`: 是否已分享 (true | false)
+- `authStatus`: 授权状态 (not-requested | pending | approved | rejected)
 - `page`: 页码 (默认 1)
 - `pageSize`: 每页数量 (默认 10)
 - `sortBy`: 排序字段 (uploadTime | title | fileSize | viewCount)
@@ -425,8 +483,8 @@ type VerificationCode struct {
         "uploadTime": "2025-01-04T10:00:00Z",
         "updatedAt": "2025-01-04T10:00:00Z",
         "patientId": "user_abc123",
-        "isShared": true,
-        "shareCount": 2,
+        "authStatus": "approved",
+        "authorizationCount": 2,
         "downloadCount": 5,
         "viewCount": 10,
         "thumbnailUrl": "https://example.com/thumb.jpg",
@@ -444,7 +502,7 @@ type VerificationCode struct {
 }
 ```
 
-#### 3.2.2 上传文件
+#### 4.2.2 上传文件
 
 **请求**: `POST /api/medical-data/upload`
 
@@ -470,160 +528,211 @@ type VerificationCode struct {
 }
 ```
 
-#### 3.2.3 下载文件
-
-**请求**: `GET /api/medical-data/download/:id`
-
-**响应**: 文件流 (Blob)
-
-**Headers**:
-- `Content-Type`: 文件MIME类型
-- `Content-Disposition`: `attachment; filename="filename.ext"`
-- `Content-Length`: 文件大小
-
-#### 3.2.4 获取数据统计
-
-**请求**: `GET /api/medical-data/statistics`
-
-**响应**:
-```json
-{
-  "code": 200,
-  "success": true,
-  "data": {
-    "totalFiles": 50,
-    "totalSize": 104857600,
-    "categoryStats": {
-      "report": { "count": 20, "size": 40000000 },
-      "image": { "count": 15, "size": 50000000 },
-      "prescription": { "count": 10, "size": 10000000 },
-      "other": { "count": 5, "size": 4857600 }
-    },
-    "monthlyUploads": [
-      { "month": "2025-01", "count": 10, "size": 20000000 },
-      { "month": "2025-02", "count": 15, "size": 30000000 }
-    ],
-    "mostViewedFiles": [
-      { "id": "file_1", "title": "CT影像", "viewCount": 50 }
-    ],
-    "recentShares": 5,
-    "activeShares": 8
-  }
-}
-```
-
 ---
 
-### 3.3 数据分享 (Share API) - `/api/shares`
+### 4.3 授权管理 (Authorization API) - `/api/authorization`
 
-| 方法   | 路径                              | 说明              | 角色要求 |
-|--------|----------------------------------|-------------------|---------| 
-| POST   | /shares                          | 创建分享          | patient |
-| GET    | /shares/my-shares                | 获取我的分享列表   | patient |
-| GET    | /shares/received                 | 获取收到的分享     | doctor  |
-| GET    | /shares/:id                      | 获取分享详情      | both    |
-| PUT    | /shares/:id                      | 更新分享          | patient |
-| POST   | /shares/:id/revoke               | 撤销分享          | patient |
-| POST   | /shares/batch-revoke             | 批量撤销分享      | patient |
-| POST   | /shares/:id/extend               | 延长分享有效期     | patient |
-| GET    | /shares/file/:fileId             | 获取文件的分享记录  | patient |
-| GET    | /shares/doctor/:doctorId         | 获取与医生的分享   | patient |
-| GET    | /shares/statistics               | 获取分享统计      | patient |
-| POST   | /shares/check-permission         | 检查分享权限      | patient |
-| POST   | /shares/:id/generate-link        | 生成分享链接      | patient |
-| GET    | /shares/:shareId/access/:fileId  | 访问共享文件      | doctor  |
+**⚠️ 重要**: 本系统已废弃传统的"数据分享"功能，改用"授权管理"机制。
 
-#### 3.3.1 创建分享
+| 方法   | 路径                              | 说明                     | 角色要求 |
+|--------|----------------------------------|-------------------------|---------|
+| POST   | /authorization/request           | 医生发起授权请求          | doctor  |
+| GET    | /authorization/requests          | 获取授权请求列表          | both    |
+| GET    | /authorization/requests/:id      | 获取授权请求详情          | both    |
+| POST   | /authorization/requests/:id/approve | 患者批准授权请求       | patient |
+| POST   | /authorization/requests/:id/reject  | 患者拒绝授权请求       | patient |
+| POST   | /authorization/requests/:id/revoke  | 患者撤销已授权         | patient |
+| GET    | /authorization/status/:dataId    | 查询数据授权状态          | doctor  |
+| GET    | /authorization/history           | 获取授权历史记录          | both    |
 
-**请求**: `POST /api/shares`
+#### 4.3.1 医生发起授权请求
+
+**请求**: `POST /api/authorization/request`
 
 ```json
 {
-  "fileIds": ["file_123", "file_456"],
-  "doctorId": "doctor_789",
-  "permissions": ["view", "download"],
-  "shareReason": "定期复查需要",
-  "expiresAt": "2025-12-31T23:59:59Z"
+  "dataId": "data_123",
+  "patientId": "patient_456",
+  "reason": "患者定期复查，需要查看历史检验报告以评估病情进展",
+  "purpose": "diagnosis"
 }
 ```
+
+**purpose 枚举值**:
+- `diagnosis`: 诊断
+- `evaluation`: 评估
+- `research`: 研究
+- `consultation`: 会诊
+- `other`: 其他
 
 **响应**:
 ```json
 {
   "code": 200,
   "success": true,
-  "message": "分享创建成功",
+  "message": "授权请求已提交",
   "data": {
-    "id": "share_001",
-    "fileId": "file_123",
+    "id": "auth_req_001",
     "doctorId": "doctor_789",
-    "patientId": "user_abc123",
-    "permissions": ["view", "download"],
-    "shareReason": "定期复查需要",
-    "expiresAt": "2025-12-31T23:59:59Z",
-    "status": "active",
-    "createdAt": "2025-10-04T10:00:00Z",
-    "accessCount": 0,
-    "doctor": {
-      "id": "doctor_789",
-      "name": "李医生",
-      "hospital": "浙江大学医学院附属第一医院",
-      "department": "心血管科"
-    },
-    "file": {
-      "id": "file_123",
-      "title": "血常规检查报告",
-      "fileName": "blood_test.pdf",
-      "fileType": "pdf",
-      "category": "report"
+    "patientId": "patient_456",
+    "dataId": "data_123",
+    "reason": "患者定期复查，需要查看历史检验报告以评估病情进展",
+    "purpose": "diagnosis",
+    "status": "pending",
+    "requestedAt": "2025-10-12T10:00:00Z",
+    "data": {
+      "id": "data_123",
+      "name": "血常规检查报告",
+      "category": "检验报告",
+      "uploadedAt": "2025-10-01T14:30:00Z"
     }
   }
 }
 ```
 
-#### 3.3.2 获取我的分享列表
+#### 4.3.2 获取授权请求列表
 
-**请求**: `GET /api/shares/my-shares`
+**患者端请求**: `GET /api/authorization/requests?role=patient`
+**医生端请求**: `GET /api/authorization/requests?role=doctor`
 
 **Query 参数**:
-- `status`: active | expired | revoked
-- `doctorId`: 医生ID
-- `fileId`: 文件ID
-- `page`: 页码
-- `pageSize`: 每页数量
+- `role`: patient | doctor (必需)
+- `status`: pending | approved | rejected | expired
+- `page`: 页码（默认1）
+- `pageSize`: 每页数量（默认20）
+
+**患者端响应**（收到的授权请求）:
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": {
+    "requests": [
+      {
+        "id": "auth_req_001",
+        "doctorId": "doctor_789",
+        "doctorName": "李医生",
+        "doctorDepartment": "心血管科",
+        "doctorHospital": "浙江大学医学院附属第一医院",
+        "patientId": "patient_456",
+        "dataId": "data_123",
+        "dataName": "血常规检查报告",
+        "dataType": "检验报告",
+        "reason": "患者定期复查，需要查看历史检验报告以评估病情进展",
+        "purpose": "diagnosis",
+        "status": "pending",
+        "requestedAt": "2025-10-12T10:00:00Z"
+      }
+    ],
+    "total": 5,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+**医生端响应**（发起的授权请求）:
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": {
+    "requests": [
+      {
+        "id": "auth_req_001",
+        "patientId": "patient_456",
+        "patientName": "张三",
+        "dataId": "data_123",
+        "dataName": "血常规检查报告",
+        "reason": "患者定期复查...",
+        "status": "approved",
+        "requestedAt": "2025-10-12T10:00:00Z",
+        "processedAt": "2025-10-12T14:30:00Z",
+        "expiresAt": "2025-11-12T14:30:00Z"
+      }
+    ],
+    "total": 12,
+    "page": 1,
+    "pageSize": 20
+  }
+}
+```
+
+#### 4.3.3 患者批准授权请求
+
+**请求**: `POST /api/authorization/requests/:id/approve`
+
+```json
+{
+  "expiresIn": 30,
+  "notes": "已批准，授权有效期30天"
+}
+```
+
+**expiresIn 说明**:
+- 单位：天
+- 0 表示永久授权
+- >0 表示授权有效天数
 
 **响应**:
 ```json
 {
   "code": 200,
   "success": true,
+  "message": "授权请求已批准",
   "data": {
-    "shares": [...],
-    "total": 20,
-    "page": 1,
-    "pageSize": 10
+    "id": "auth_req_001",
+    "status": "approved",
+    "processedAt": "2025-10-12T14:30:00Z",
+    "expiresAt": "2025-11-12T14:30:00Z",
+    "notes": "已批准，授权有效期30天"
+  }
+}
+```
+
+#### 4.3.4 患者拒绝授权请求
+
+**请求**: `POST /api/authorization/requests/:id/reject`
+
+```json
+{
+  "reason": "暂不需要该医生查看此数据"
+}
+```
+
+**响应**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "message": "授权请求已拒绝",
+  "data": {
+    "id": "auth_req_001",
+    "status": "rejected",
+    "processedAt": "2025-10-12T14:30:00Z",
+    "rejectReason": "暂不需要该医生查看此数据"
   }
 }
 ```
 
 ---
 
-### 3.4 访问记录 (Access API) - `/api/access`
+### 4.4 访问记录 (Access API) - `/api/access`
 
 | 方法   | 路径                          | 说明              | 角色要求 |
 |--------|------------------------------|-------------------|---------| 
 | GET    | /access/my-records           | 获取我的访问记录   | patient |
-| GET    | /access/file/:fileId         | 获取文件访问记录   | patient |
+| GET    | /access/data/:dataId         | 获取数据访问记录   | patient |
 | GET    | /access/statistics           | 获取访问统计      | patient |
 | GET    | /access/recent               | 获取最近访问      | patient |
 
-#### 3.4.1 获取访问记录
+#### 4.4.1 获取访问记录
 
 **请求**: `GET /api/access/my-records`
 
 **Query 参数**:
 - `doctorId`: 医生ID
-- `fileId`: 文件ID
+- `dataId`: 数据ID
 - `accessType`: view | download | preview
 - `startDate`: 开始日期
 - `endDate`: 结束日期
@@ -639,10 +748,10 @@ type VerificationCode struct {
     "records": [
       {
         "id": "access_001",
-        "fileId": "file_123",
+        "dataId": "data_123",
         "doctorId": "doctor_789",
         "patientId": "user_abc123",
-        "shareId": "share_001",
+        "authorizationId": "auth_req_001",
         "accessType": "view",
         "accessTime": "2025-10-04T14:30:00Z",
         "ipAddress": "192.168.1.100",
@@ -654,12 +763,12 @@ type VerificationCode struct {
           "hospital": "浙江大学医学院附属第一医院",
           "department": "心血管科"
         },
-        "file": {
-          "id": "file_123",
-          "title": "血常规检查报告",
+        "data": {
+          "id": "data_123",
+          "name": "血常规检查报告",
           "fileName": "blood_test.pdf",
           "fileType": "pdf",
-          "category": "report"
+          "category": "检验报告"
         }
       }
     ],
@@ -672,37 +781,35 @@ type VerificationCode struct {
 
 ---
 
-### 3.5 医生端 (Doctor API) - `/api/doctor`
+### 4.5 医生端 (Doctor API) - `/api/doctor`
 
-| 方法   | 路径                                    | 说明              | 角色要求 |
-|--------|-----------------------------------------|-------------------|---------| 
-| GET    | /doctor/patients                        | 获取患者列表       | doctor  |
-| GET    | /doctor/patients/:id                    | 获取患者详情       | doctor  |
-| GET    | /doctor/patients/search                 | 搜索患者          | doctor  |
-| GET    | /doctor/patients/:id/files              | 获取患者文件列表   | doctor  |
-| POST   | /doctor/permission-requests             | 申请访问权限       | doctor  |
-| GET    | /doctor/permission-requests             | 获取权限申请列表   | doctor  |
-| GET    | /doctor/permission-requests/:id         | 获取申请详情       | doctor  |
-| POST   | /doctor/permission-requests/:id/cancel  | 撤销权限申请       | doctor  |
-| GET    | /doctor/shared-files                    | 获取共享文件列表   | doctor  |
-| POST   | /doctor/access-file                     | 访问患者文件       | doctor  |
-| GET    | /doctor/download-file/:shareId/:fileId  | 下载共享文件       | doctor  |
-| GET    | /doctor/access-history                  | 获取访问历史       | doctor  |
-| GET    | /doctor/dashboard/statistics            | 获取工作台统计     | doctor  |
-| POST   | /doctor/patients/:id/notes              | 添加患者备注       | doctor  |
-| GET    | /doctor/patients/:id/notes              | 获取患者备注       | doctor  |
-| POST   | /doctor/patients/:id/favorite           | 标记常用患者       | doctor  |
-| GET    | /doctor/patients/favorites              | 获取常用患者列表   | doctor  |
+**⚠️ 核心变更**: 医生端从"患者管理"改为"数据管理"，医生看到的是医疗数据列表，而非患者列表。
 
-#### 3.5.1 获取患者列表
+| 方法   | 路径                                    | 说明                        | 角色要求 |
+|--------|-----------------------------------------|----------------------------|---------| 
+| GET    | /doctor/medical-data                    | 获取医疗数据列表（核心接口）  | doctor  |
+| GET    | /doctor/medical-data/:id                | 获取数据详情（需授权）       | doctor  |
+| POST   | /doctor/request-authorization           | 发起授权请求                | doctor  |
+| GET    | /doctor/authorization-requests          | 获取我的授权请求列表         | doctor  |
+| GET    | /doctor/access-history                  | 获取访问历史                | doctor  |
+| GET    | /doctor/statistics                      | 获取医生端统计数据           | doctor  |
 
-**请求**: `GET /api/doctor/patients`
+#### 4.5.1 获取医疗数据列表（核心接口）
+
+**请求**: `GET /api/doctor/medical-data`
 
 **Query 参数**:
-- `keyword`: 搜索关键词
-- `hasActiveShare`: 是否有活跃分享 (true | false)
-- `page`: 页码
-- `pageSize`: 每页数量
+- `dataType`: 数据类型（检验报告 | 影像资料 | 病历记录 | 体检报告 | 用药记录）
+- `authStatus`: 授权状态（not-requested | pending | authorized | rejected | expired）
+- `keyword`: 搜索关键词（仅搜索数据名称，不包括患者信息）
+- `dateRange`: 日期范围数组 ["2025-01-01", "2025-12-31"]
+- `page`: 页码（默认1）
+- `pageSize`: 每页数量（默认20）
+
+**重要说明**:
+- 所有患者上传的数据对医生可见（基本信息）
+- 未授权时，隐藏所属患者信息（显示为"🔒 需授权后可见"）
+- 已授权时，显示完整信息（包括所属患者）
 
 **响应**:
 ```json
@@ -712,134 +819,80 @@ type VerificationCode struct {
   "data": {
     "items": [
       {
-        "id": "user_abc123",
-        "name": "张三",
-        "age": 35,
-        "gender": "male",
-        "phone": "138****8000",
-        "idCard": "3301********1234",
-        "emergencyContact": {
-          "name": "李四",
-          "phone": "139****9000",
-          "relation": "配偶"
-        },
-        "medicalHistory": ["高血压", "糖尿病"],
-        "allergies": ["青霉素"],
-        "createdAt": "2025-01-01T08:00:00Z",
-        "totalFiles": 20,
-        "sharedFiles": 5,
-        "lastShareTime": "2025-10-01T10:00:00Z"
+        "id": "data_123",
+        "name": "血常规检查报告",
+        "category": "检验报告",
+        "uploadedAt": "2025-10-01T14:30:00Z",
+        "fileSize": "2.5 MB",
+        "authStatus": "authorized",
+        "patientName": "张三",
+        "patientGender": "male",
+        "patientAge": 35
+      },
+      {
+        "id": "data_456",
+        "name": "胸部CT影像",
+        "category": "影像资料",
+        "uploadedAt": "2025-10-05T09:15:00Z",
+        "fileSize": "15.8 MB",
+        "authStatus": "not-requested",
+        "patientName": "🔒 需授权后可见",
+        "patientGender": "🔒 需授权后可见",
+        "patientAge": null
       }
     ],
-    "total": 18,
+    "total": 150,
     "page": 1,
-    "pageSize": 10,
-    "totalPages": 2
+    "pageSize": 20
   }
 }
 ```
 
-#### 3.5.2 获取患者文件列表
+#### 4.5.2 获取医生端统计数据
 
-**请求**: `GET /api/doctor/patients/:patientId/files`
+**请求**: `GET /api/doctor/statistics`
+
+**响应**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": {
+    "totalData": 150,
+    "authorizedData": 45,
+    "pendingData": 12,
+    "todayViewed": 8
+  }
+}
+```
+
+#### 4.5.3 获取访问历史
+
+**请求**: `GET /api/doctor/access-history`
 
 **Query 参数**:
-- `category`: 文件类别
-- `keyword`: 搜索关键词
 - `page`: 页码
 - `pageSize`: 每页数量
 
-**响应**: 同医疗数据文件列表格式
-
-#### 3.5.3 申请访问权限
-
-**请求**: `POST /api/doctor/permission-requests`
-
-```json
-{
-  "patientId": "user_abc123",
-  "requestReason": "患者定期复查需要查看历史病历",
-  "requestedFiles": ["file_123", "file_456"],
-  "requestedPermissions": ["view", "download"],
-  "expiresAt": "2025-12-31T23:59:59Z"
-}
-```
-
-**响应**:
-```json
-{
-  "code": 200,
-  "success": true,
-  "message": "权限申请已提交",
-  "data": {
-    "id": "req_001",
-    "patientId": "user_abc123",
-    "doctorId": "doctor_789",
-    "requestReason": "患者定期复查需要查看历史病历",
-    "requestedFiles": ["file_123", "file_456"],
-    "requestedPermissions": ["view", "download"],
-    "expiresAt": "2025-12-31T23:59:59Z",
-    "status": "pending",
-    "createdAt": "2025-10-04T10:00:00Z",
-    "patient": {
-      "id": "user_abc123",
-      "name": "张三",
-      "phone": "138****8000"
-    }
-  }
-}
-```
-
-#### 3.5.4 获取工作台统计
-
-**请求**: `GET /api/doctor/dashboard/statistics`
-
-**响应**:
-```json
-{
-  "code": 200,
-  "success": true,
-  "data": {
-    "totalPatients": 18,
-    "activeShares": 15,
-    "pendingRequests": 3,
-    "todayAccess": 25,
-    "recentPatients": [...],
-    "recentShares": [...],
-    "recentAccess": [...],
-    "monthlyTrend": [
-      {
-        "date": "2025-09",
-        "accessCount": 120,
-        "patientCount": 15
-      },
-      {
-        "date": "2025-10",
-        "accessCount": 85,
-        "patientCount": 18
-      }
-    ]
-  }
-}
-```
+**响应**: 参考 4.4.1 访问记录格式
 
 ---
 
-### 3.6 患者端 (Patient API) - `/api/patient`
+### 4.6 患者端 (Patient API) - `/api/patient`
 
-| 方法   | 路径                               | 说明                | 角色要求 |
-|--------|------------------------------------|---------------------|---------| 
-| GET    | /patient/dashboard/statistics      | 获取工作台统计       | patient |
-| GET    | /patient/permission-requests       | 获取权限申请列表     | patient |
-| GET    | /patient/permission-requests/:id   | 获取申请详情         | patient |
-| POST   | /patient/permission-requests/:id/approve | 批准权限申请   | patient |
-| POST   | /patient/permission-requests/:id/reject  | 拒绝权限申请   | patient |
-| GET    | /patient/doctors                   | 获取已授权医生列表   | patient |
-| GET    | /patient/recent-activities         | 获取最近活动记录     | patient |
+| 方法   | 路径                                           | 说明                | 角色要求 |
+|--------|-----------------------------------------------|---------------------|---------| 
+| GET    | /patient/statistics/files                     | 获取文件统计         | patient |
+| GET    | /patient/authorization-requests               | 获取授权请求列表     | patient |
+| GET    | /patient/authorization-requests/:id           | 获取授权请求详情     | patient |
+| POST   | /patient/authorization-requests/:id/approve   | 批准授权请求        | patient |
+| POST   | /patient/authorization-requests/:id/reject    | 拒绝授权请求        | patient |
+| POST   | /patient/authorization-requests/:id/revoke    | 撤销已授权          | patient |
+| GET    | /patient/authorization-history                | 获取授权历史记录     | patient |
 
-#### 3.6.1 获取工作台统计
+#### 4.6.1 获取文件统计
 
-**请求**: `GET /api/patient/dashboard/statistics`
+**请求**: `GET /api/patient/statistics/files`
 
 **响应**:
 ```json
@@ -848,29 +901,28 @@ type VerificationCode struct {
   "success": true,
   "data": {
     "totalFiles": 50,
-    "sharedFiles": 15,
-    "authorizedDoctors": 5,
-    "pendingRequests": 2,
-    "recentUploads": [...],
-    "recentShares": [...],
-    "recentAccess": [...],
-    "storageUsage": {
-      "used": 104857600,
-      "total": 1073741824,
-      "percentage": 10
-    }
+    "authorizedFiles": 15,
+    "recentUploads": 8,
+    "filesByCategory": {
+      "检验报告": 15,
+      "影像资料": 10,
+      "病历记录": 12,
+      "体检报告": 8,
+      "用药记录": 5
+    },
+    "storageUsed": "125.6 MB"
   }
 }
 ```
 
-#### 3.6.2 批准权限申请
+#### 4.6.2 批准授权请求
 
-**请求**: `POST /api/patient/permission-requests/:id/approve`
+**请求**: `POST /api/patient/authorization-requests/:id/approve`
 
 ```json
 {
-  "approvedPermissions": ["view", "download"],
-  "expiresAt": "2025-12-31T23:59:59Z"
+  "expiresIn": 30,
+  "notes": "已批准，授权有效期30天"
 }
 ```
 
@@ -884,16 +936,16 @@ type VerificationCode struct {
     "id": "req_001",
     "status": "approved",
     "processedAt": "2025-10-04T10:30:00Z",
-    ...
+    "expiresAt": "2025-11-04T10:30:00Z"
   }
 }
 ```
 
 ---
 
-## 四、统一响应格式
+## 五、统一响应格式
 
-### 4.1 成功响应
+### 5.1 成功响应
 
 ```go
 type SuccessResponse struct {
@@ -914,7 +966,7 @@ type SuccessResponse struct {
 }
 ```
 
-### 4.2 错误响应
+### 5.2 错误响应
 
 ```go
 type ErrorResponse struct {
@@ -938,7 +990,7 @@ type ErrorResponse struct {
 }
 ```
 
-### 4.3 分页响应
+### 5.3 分页响应
 
 ```go
 type PaginatedResponse struct {
@@ -959,7 +1011,7 @@ type PaginatedData struct {
 
 ---
 
-## 五、HTTP 状态码规范
+## 六、HTTP 状态码规范
 
 | 状态码 | 说明                     | 使用场景                    |
 |--------|--------------------------|----------------------------|
@@ -978,9 +1030,9 @@ type PaginatedData struct {
 
 ---
 
-## 六、文件上传下载规范
+## 七、文件上传下载规范
 
-### 6.1 文件上传
+### 7.1 文件上传
 
 - **请求方式**: POST
 - **Content-Type**: `multipart/form-data`
@@ -998,7 +1050,7 @@ type PaginatedData struct {
 5. 保存文件记录到数据库
 6. 返回文件信息
 
-### 6.2 文件下载
+### 7.2 文件下载
 
 - **请求方式**: GET
 - **Response Type**: blob
@@ -1008,7 +1060,7 @@ type PaginatedData struct {
   - `Content-Length`: 文件大小（字节）
 
 **下载流程**:
-1. 验证用户权限（是否拥有文件或有分享权限）
+1. 验证用户权限（是否拥有文件或有授权权限）
 2. 读取文件流
 3. 设置响应头
 4. 返回文件流
@@ -1016,16 +1068,16 @@ type PaginatedData struct {
 
 ---
 
-## 七、安全要求
+## 八、安全要求
 
-### 7.1 密码与敏感信息
+### 8.1 密码与敏感信息
 
 - 系统采用手机验证码登录，不使用密码
 - 身份证号需加密存储（AES-256）
 - 手机号部分脱敏显示（138****8000）
 - API响应中不暴露完整身份证号
 
-### 7.2 Token 安全
+### 8.2 Token 安全
 
 - JWT 使用 HS256 算法签名
 - Token 密钥长度至少 32 字节
@@ -1033,7 +1085,7 @@ type PaginatedData struct {
 - Refresh Token 有效期 30 天
 - Token 失效后需重新登录
 
-### 7.3 验证码
+### 8.3 验证码
 
 - 验证码长度 6 位数字
 - 有效期 5 分钟
@@ -1041,14 +1093,14 @@ type PaginatedData struct {
 - 验证成功后立即失效
 - 最多验证 3 次失败后锁定
 
-### 7.4 文件安全
+### 8.4 文件安全
 
 - 文件存储路径不暴露给前端
-- 文件访问需要签名或Token验证
+- 文件访问需要授权验证
 - 上传文件需病毒扫描
 - 文件完整性校验（MD5/SHA256）
 
-### 7.5 CORS 配置
+### 8.5 CORS 配置
 
 ```go
 // 允许的前端域名
@@ -1074,9 +1126,9 @@ AllowCredentials: true
 
 ---
 
-## 八、环境配置
+## 九、环境配置
 
-### 8.1 环境变量
+### 9.1 环境变量
 
 ```bash
 # 服务配置
@@ -1114,7 +1166,7 @@ REDIS_PASSWORD=
 REDIS_DB=0
 ```
 
-### 8.2 数据库配置
+### 9.2 数据库配置
 
 - **类型**: MySQL 8.0+
 - **字符集**: utf8mb4
@@ -1124,9 +1176,9 @@ REDIS_DB=0
 
 ---
 
-## 九、开发约定
+## 十、开发约定
 
-### 9.1 命名规范
+### 10.1 命名规范
 
 - **路由**: 小写字母 + 连字符（kebab-case）如: `/medical-data`
 - **结构体**: 大驼峰（PascalCase）如: `MedicalFile`
@@ -1135,7 +1187,7 @@ REDIS_DB=0
 - **常量**: 全大写 + 下划线（UPPER_SNAKE_CASE）如: `MAX_FILE_SIZE`
 - **数据库字段**: 小写 + 下划线（snake_case）如: `created_at`
 
-### 9.2 日志规范
+### 10.2 日志规范
 
 使用结构化日志（推荐 zap 或 logrus）:
 
@@ -1154,7 +1206,7 @@ log.Error("文件上传失败",
 )
 ```
 
-### 9.3 错误处理
+### 10.3 错误处理
 
 ```go
 // 定义业务错误码
@@ -1180,21 +1232,21 @@ var ErrMessages = map[int]string{
 
 ---
 
-## 十、测试要求
+## 十一、测试要求
 
-### 10.1 单元测试
+### 11.1 单元测试
 
 - 所有 Handler 函数需编写单元测试
 - Service 层业务逻辑需单元测试
 - 测试覆盖率要求 > 70%
 
-### 10.2 集成测试
+### 11.2 集成测试
 
 - 数据库操作集成测试
 - API 端到端测试
 - 文件上传下载测试
 
-### 10.3 性能测试
+### 11.3 性能测试
 
 - 并发用户数: 1000
 - 响应时间: P95 < 500ms, P99 < 1000ms
@@ -1202,9 +1254,9 @@ var ErrMessages = map[int]string{
 
 ---
 
-## 十一、部署要求
+## 十二、部署要求
 
-### 11.1 服务器环境
+### 12.1 服务器环境
 
 - **操作系统**: Linux (Ubuntu 20.04+ / CentOS 8+)
 - **Go 版本**: 1.21+
@@ -1212,7 +1264,7 @@ var ErrMessages = map[int]string{
 - **反向代理**: Nginx
 - **HTTPS**: Let's Encrypt SSL 证书
 
-### 11.2 Docker 部署（推荐）
+### 12.2 Docker 部署（推荐）
 
 ```dockerfile
 FROM golang:1.21-alpine AS builder
@@ -1265,27 +1317,31 @@ volumes:
 
 ---
 
-## 十二、附录
+## 十三、附录
 
-### 12.1 前端项目结构
+### 13.1 前端项目结构
 
 ```
 vue-project/
 ├── src/
-│   ├── api/                  # API 接口模块
-│   │   ├── auth.ts          # 认证API
-│   │   ├── medicalData.ts   # 医疗数据API
-│   │   ├── share.ts         # 分享API
-│   │   ├── access.ts        # 访问记录API
-│   │   ├── doctor.ts        # 医生端API
-│   │   ├── patient.ts       # 患者端API
-│   │   └── index.ts         # 统一导出
+│   ├── api/                  # API 接口模块（已精简至20个核心API）
+│   │   ├── access.ts        # 访问记录 API（5个）
+│   │   ├── auth.ts          # 认证 API（3个）
+│   │   ├── doctor.ts        # 医生端 API（3个）
+│   │   ├── index.ts         # API 统一导出
+│   │   ├── medicalData.ts   # 医疗数据 API（1个）
+│   │   └── patient.ts       # 患者端 API（6个）
 │   ├── stores/              # Pinia 状态管理
 │   │   ├── auth.ts          # 认证状态
 │   │   └── medicalData.ts   # 医疗数据状态
 │   ├── views/               # 页面组件
 │   │   ├── patient/         # 患者端页面
+│   │   │   ├── DataView.vue          # 我的数据
+│   │   │   ├── AccessView.vue        # 访问记录
+│   │   │   └── AuthorizationView.vue # 授权管理
 │   │   └── doctor/          # 医生端页面
+│   │       ├── DataManagementView.vue # 数据管理
+│   │       └── AccessHistoryView.vue  # 访问历史
 │   ├── types/               # TypeScript 类型定义
 │   │   ├── auth.ts
 │   │   └── medicalData.ts
@@ -1294,7 +1350,7 @@ vue-project/
 └── .env.development         # 开发环境配置
 ```
 
-### 12.2 前端环境配置
+### 13.2 前端环境配置
 
 ```bash
 # .env.development
@@ -1308,5 +1364,88 @@ VITE_UPLOAD_MAX_SIZE=104857600
 VITE_UPLOAD_ALLOWED_TYPES=pdf,doc,docx,jpg,jpeg,png,gif
 ```
 
+### 13.3 前端核心API清单
 
+#### 认证API (3个)
+- `POST /auth/send-verification-code` - 发送验证码
+- `POST /auth/login` - 用户登录
+- `POST /auth/logout` - 用户登出
 
+#### 患者端API (6个)
+- `GET /patient/statistics/files` - 获取文件统计
+- `GET /patient/authorization-requests` - 获取授权请求列表
+- `GET /patient/authorization-requests/:id` - 获取授权请求详情
+- `POST /patient/authorization-requests/:id/approve` - 批准授权
+- `POST /patient/authorization-requests/:id/reject` - 拒绝授权
+- `POST /patient/authorization-requests/:id/revoke` - 撤销授权
+
+#### 医生端API (3个)
+- `GET /doctor/medical-data` - 获取医疗数据列表
+- `GET /doctor/statistics` - 获取统计数据
+- `GET /doctor/access-history` - 获取访问历史
+
+#### 医疗数据API (1个)
+- `GET /medical-data/files` - 获取文件列表
+
+#### 访问记录API (5个)
+- `GET /access/my-records` - 获取访问记录
+- `GET /access/statistics` - 获取访问统计
+- `GET /access/recent` - 获取最近访问
+- `GET /access/doctors` - 获取访问的医生列表
+- `GET /access/files` - 获取被访问的文件列表
+
+### 13.4 核心功能页面映射
+
+#### 患者端页面
+- `/patient/data` - 我的数据（数据上传、查看、管理）
+- `/patient/authorization` - 授权管理（处理医生的授权请求）
+- `/patient/access` - 访问记录（查看数据访问历史）
+
+#### 医生端页面
+- `/doctor/data` - 数据管理（查看可访问的医疗数据）
+- `/doctor/access-history` - 访问历史（查看自己的访问记录）
+
+---
+
+## 十四、FAQ
+
+### Q1: 为什么废弃"数据分享"功能，改用"授权管理"？
+
+**A**: 新的授权管理机制更符合医疗数据的实际使用场景：
+- 医生可以发现更多患者数据，无需患者主动分享
+- 患者保留完全的数据控制权，可审批每个访问请求
+- 数据流转过程更透明、可追溯
+
+### Q2: 医生能看到哪些数据？
+
+**A**: 医生可以看到所有患者上传的数据的基本信息（数据名称、类型、上传时间），但看不到所属患者信息。只有在患者授权后，医生才能查看完整的数据内容和患者信息。
+
+### Q3: 授权有效期如何设置？
+
+**A**: 患者在批准授权请求时可以设置有效期：
+- 0 天表示永久授权
+- >0 天表示限时授权（如 30 天）
+- 过期后医生需要重新申请
+
+### Q4: 如何保证数据安全？
+
+**A**: 多层安全机制：
+- JWT Token 认证
+- 授权机制控制数据访问
+- 完整的访问日志记录
+- 文件加密存储
+- 敏感信息脱敏
+
+### Q5: 前端如何调用后端API？
+
+**A**: 前端使用 Axios 封装的请求工具，自动处理：
+- Token 附加
+- 错误处理
+- Mock 数据拦截（演示账户）
+- 请求/响应日志
+
+---
+
+**文档版本**: v2.0  
+**最后更新**: 2025-10-12  
+**维护者**: 开发团队
