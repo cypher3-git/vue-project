@@ -97,51 +97,6 @@ export interface VerificationCode {
   purpose: 'register' | 'login'          // 用途：注册或登录
 }
 
-
-// 授权申请相关
-export interface PermissionRequest {
-  id: string                                                          // 申请记录ID
-  doctorId: string                                                    // 医生ID
-  patientId: string                                                   // 患者ID
-  dataId: string                                                      // 数据文件ID（申请访问的具体文件）
-  dataName: string                                                    // 数据文件名称
-  dataType: string                                                    // 数据类型（report/image/prescription/medication）
-  status: 'pending' | 'approved' | 'rejected' | 'expired'            // 状态：待审批/已批准/已拒绝/已过期
-  createdAt: string                                                   // 创建时间
-  processedAt?: string                                                // 处理时间（批准或拒绝的时间）
-  rejectReason?: string                                               // 拒绝理由（可选）
-  doctor: {
-    id: string                                                        // 医生ID
-    name: string                                                      // 医生姓名
-    hospital: string                                                  // 医院名称
-    department: string                                                // 科室
-  }
-  patient?: {                                                         // 患者信息（可选，隐私保护）
-    id: string                                                        // 患者ID
-    name: string                                                      // 患者姓名
-  }
-}
-
-// 授权记录
-export interface AuthorizationRecord {
-  id: string                    // 授权记录ID
-  doctorId: string              // 医生ID
-  patientId: string             // 患者ID
-  dataId: string                // 数据文件ID
-  dataName: string              // 数据文件名称
-  dataType: string              // 数据类型（report/image/prescription/medication）
-  grantedAt: string             // 授权时间
-  expiresAt?: string            // 过期时间（可选）
-  isActive: boolean             // 是否有效（未过期且未撤销）
-  revokedAt?: string            // 撤销时间（可选）
-  doctor: {
-    id: string                  // 医生ID
-    name: string                // 医生姓名
-    hospital: string            // 医院名称
-    department: string          // 科室
-  }
-}
-
 // API响应基础接口
 export interface ApiResponse<T = any> {
   success: boolean                      // 请求是否成功

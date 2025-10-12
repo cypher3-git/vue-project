@@ -124,38 +124,7 @@ type MedicalFile struct {
 - 新增 `AuthorizationCount` 字段记录授权请求数量
 - Category 新增 `medication` 类型（用药记录）
 
-### 2.5 授权请求模型 (AuthorizationRequest) - 简化版
-
-```go
-type AuthorizationRequest struct {
-    ID              string    `json:"id" gorm:"primaryKey"`
-    DoctorID        string    `json:"doctorId" gorm:"not null;index"`
-    PatientID       string    `json:"patientId" gorm:"not null;index"`
-    DataID          string    `json:"dataId" gorm:"not null;index"`    // 医疗数据ID（申请访问的具体文件）
-    DataName        string    `json:"dataName" gorm:"not null"`        // 数据文件名称
-    DataType        string    `json:"dataType" gorm:"not null"`        // 数据类型："report" | "image" | "prescription" | "medication"
-    Status          string    `json:"status" gorm:"default:pending"`   // "pending" | "approved" | "rejected" | "expired"
-    CreatedAt       time.Time `json:"createdAt" gorm:"autoCreateTime"` // 创建时间
-    ProcessedAt     time.Time `json:"processedAt,omitempty"`           // 处理时间（批准或拒绝）
-    RejectReason    string    `json:"rejectReason,omitempty"`          // 拒绝理由（可选）
-}
-```
-
-**简化说明**：
-- ✅ **以单文件为单位**：每次申请针对一个具体的医疗数据文件
-- ❌ 移除 `Reason`（申请理由）：简化流程，医生直接申请即可
-- ❌ 移除 `Purpose`（申请目的）：简化流程，减少填写负担
-- ❌ 移除 `ExpiresAt`：授权长期有效，除非患者主动撤销
-- ❌ 移除 `Notes`：简化流程
-
-**授权流程说明**：
-1. 医生在"数据管理"页面看到患者上传的数据（看不到患者信息）
-2. 医生点击"申请授权"，系统自动发起申请（无需填写理由）
-3. 患者在"授权管理"页面收到请求，看到数据名称、类型和医生信息
-4. 患者选择"同意"或"拒绝"（拒绝可填写理由）
-5. 同意后，医生可以查看该数据的完整信息（包括所属患者）和数据内容
-
-### 2.6 访问记录模型 (AccessRecord)
+### 2.5 访问记录模型 (AccessRecord)
 
 ```go
 type AccessRecord struct {
@@ -174,9 +143,9 @@ type AccessRecord struct {
 
 **重要变更**:
 - `FileID` 改为 `DataID`（统一使用"数据"概念）
-- `ShareID` 改为 `AuthorizationID`（基于授权而非分享）
+- `AuthorizationID` 字段记录关联的数据ID（简化后不再有单独的授权记录表）
 
-### 2.7 医生统计数据模型 (DoctorStatistics)
+### 2.6 医生统计数据模型 (DoctorStatistics)
 
 ```go
 type DoctorStatistics struct {
@@ -187,7 +156,7 @@ type DoctorStatistics struct {
 }
 ```
 
-### 2.8 患者统计数据模型 (PatientStatistics)
+### 2.7 患者统计数据模型 (PatientStatistics)
 
 ```go
 type PatientStatistics struct {
@@ -199,7 +168,7 @@ type PatientStatistics struct {
 }
 ```
 
-### 2.9 验证码模型 (VerificationCode)
+### 2.8 验证码模型 (VerificationCode)
 
 ```go
 type VerificationCode struct {
@@ -231,11 +200,11 @@ type VerificationCode struct {
 | `rejected` | 数据名称、类型、上传时间、数据ID | 重新发起授权请求 |
 | `expired` | 数据名称、类型、上传时间、数据ID | 重新发起授权请求 |
 
-**授权流程**:
-1. **患者上传数据** → 数据基本信息对所有医生可见
-2. **医生发起授权** → 创建授权请求，说明原因
-3. **患者审批** → 同意/拒绝授权请求
-4. **医生访问** → 授权通过后可查看完整数据
+**授权流程（简化版 - MVP）**:
+1. **患者上传数据** → 数据基本信息对所有医生可见，`authStatus` 默认为 `not-requested`
+2. **医生发起授权** → 点击"申请授权"按钮，更新 `MedicalFile.authStatus` 为 `pending`
+3. **患者审批** → 同意（`authStatus` → `approved`）或拒绝（`authStatus` → `rejected`）
+4. **医生访问** → 授权通过后可查看完整数据和患者信息
 
 **与传统分享机制的区别**:
 - ❌ 旧模式：患者主动分享给指定医生

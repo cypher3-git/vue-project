@@ -7,7 +7,7 @@ import request from '@/utils/request'
 import type { ApiResponse, PaginatedData } from '@/types/auth'
 import type { 
   MedicalFile,
-  AccessRecord
+  AccessRecord 
 } from '@/types/medicalData'
 import { mockService } from '@/mock/mockService'
 
