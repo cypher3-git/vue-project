@@ -1148,37 +1148,6 @@ onMounted(async () => {
   gap: 12px;
 }
 
-/* 统计卡片 */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.stat-content {
-  text-align: center;
-  padding: 16px 0;
-}
-
-.stat-number {
-  font-size: 32px;
-  font-weight: bold;
-  color: #1890ff;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #666;
-}
-
 /* 筛选区域 */
 .filter-card {
   border: none;
@@ -1545,10 +1514,6 @@ onMounted(async () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
-  }
-  
-  .stats-row {
-    grid-template-columns: 1fr;
   }
   
   .filter-row {

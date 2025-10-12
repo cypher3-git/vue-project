@@ -119,30 +119,6 @@ export interface FileQueryParams {
   sortOrder?: 'asc' | 'desc'                                    // 排序方向（可选）
 }
 
-// 文件统计数据
-// 【用于】GET /api/statistics/files 文件统计查询接口（响应）
-// 患者端查看数据统计信息
-export interface FileStatistics {
-  totalFiles: number              // 文件总数
-  totalSize: number               // 总大小（字节）
-  categoryStats: {                // 按类别统计
-    [K in FileCategory]: {
-      count: number               // 文件数量
-      size: number                // 大小（字节）
-    }
-  }
-  monthlyUploads: {               // 每月上传统计
-    month: string                 // 月份
-    count: number                 // 上传数量
-    size: number                  // 上传大小（字节）
-  }[]
-  mostViewedFiles: Array<{        // 最常查看的文件
-    id: string                    // 文件ID
-    title: string                 // 文件标题
-    viewCount: number             // 查看次数
-  }>
-}
-
 // 批量操作数据
 // 【用于】POST /api/medical-files/batch 批量操作接口（请求体）
 // 患者端批量删除或移动文件类别
@@ -264,13 +240,5 @@ export interface AccessHistoryResponse {
     page: number            // 当前页码
     pageSize: number        // 每页数量
   }
-  message: string           // 提示消息
-}
-
-// 文件统计响应
-// 【用于】GET /api/statistics/files 文件统计查询接口（响应）
-export interface FileStatisticsResponse {
-  success: boolean          // 是否成功
-  data: FileStatistics      // 统计数据
   message: string           // 提示消息
 }

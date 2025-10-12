@@ -528,62 +528,6 @@ onMounted(async () => {
   gap: 12px;
 }
 
-/* 统计卡片行 */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  border: none;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card.total {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.stat-card.authorized {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-}
-
-.stat-card.pending {
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  color: #8b4513;
-}
-
-.stat-card.today {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #2c3e50;
-}
-
-.stat-content {
-  text-align: center;
-  padding: 8px;
-}
-
-.stat-number {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
 /* 筛选卡片 */
 .filter-card {
   margin-bottom: 16px;
@@ -714,11 +658,6 @@ onMounted(async () => {
     justify-content: center;
   }
   
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-  
   .filter-row {
     flex-direction: column;
     align-items: stretch;
@@ -730,16 +669,6 @@ onMounted(async () => {
   
   .filter-right {
     justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .stat-number {
-    font-size: 24px;
   }
 }
 </style>

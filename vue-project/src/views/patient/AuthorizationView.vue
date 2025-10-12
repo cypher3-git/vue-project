@@ -561,57 +561,6 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-/* 统计卡片行 */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  border: none;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card.pending {
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  color: #8b4513;
-}
-
-.stat-card.approved {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #2c3e50;
-}
-
-.stat-card.rejected {
-  background: linear-gradient(135deg, #fccf31 0%, #f55555 100%);
-  color: white;
-}
-
-.stat-content {
-  text-align: center;
-  padding: 8px;
-}
-
-.stat-number {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
 /* 筛选卡片 */
 .filter-card {
   margin-bottom: 16px;
@@ -731,11 +680,6 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .authorization-management {
     padding: 16px;
-  }
-  
-  .stats-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
   }
   
   .filter-row {

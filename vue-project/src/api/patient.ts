@@ -6,7 +6,6 @@
 import request from '@/utils/request'
 import type { ApiResponse, PaginatedData } from '@/types/auth'
 import type {
-  FileStatistics,
   AuthorizationRequest,
   ApproveAuthorizationData,
   RejectAuthorizationData
@@ -14,71 +13,6 @@ import type {
 import { mockService } from '@/mock/mockService'
 
 // ==================== 已使用的API（6个）====================
-
-/**
- * ✅ 获取患者的医疗文件统计
- * 
- * @description 获取患者数据的各项统计指标，用于仪表板展示
- * 
- * @returns Promise<ApiResponse<FileStatistics>> - 文件统计数据
- * 
- * @后端处理逻辑:
- * 1. 验证患者身份（从token获取患者ID）
- * 2. 统计以下指标：
- *    a. 总数据条目：患者上传的所有医疗数据数量
- *    b. 授权中数据：有授权请求（待审批或已授权）的数据数量
- *    c. 本月新增：本月上传的新数据数量
- *    d. 按数据类型统计：各类型数据的数量分布
- * 3. 从医疗数据表和授权表查询汇总
- * 4. 返回统计结果
- * 
- * @后端返回数据:
- * {
- *   success: true,
- *   message: "统计成功",
- *   data: {
- *     totalFiles: number,          // 总数据条目
- *     authorizedFiles: number,     // 授权中数据（待审批+已授权）
- *     recentUploads: number,       // 本月新增数据
- *     filesByCategory: {           // 按类型统计
- *       '检验报告': number,
- *       '影像资料': number,
- *       '病历记录': number,
- *       '体检报告': number,
- *       '用药记录': number
- *     },
- *     storageUsed: string          // 存储空间使用量（如"125.6 MB"）
- *   }
- * }
- * 
- * @调用位置:
- * - src/views/patient/DataView.vue (我的数据页面顶部统计卡片)
- * 
- * @应用场景:
- * - 在"我的数据"页面展示数据概览
- * - 帮助患者快速了解自己的数据情况
- * - 页面初始化时加载
- * 
- * @缓存建议:
- * - 可以对统计数据进行短时间缓存（如5分钟）
- * - 数据上传后需要清除缓存
- * 
- * @example
- * const response = await getFileStatistics()
- * // {
- * //   totalFiles: 45,
- * //   authorizedFiles: 12,
- * //   recentUploads: 8,
- * //   filesByCategory: {
- * //     '检验报告': 15,
- * //     '影像资料': 10,
- * //     ...
- * //   }
- * // }
- */
-export const getFileStatistics = async (): Promise<ApiResponse<FileStatistics>> => {
-  return request.get('/patient/statistics/files')
-}
 
 /**
  * ✅ 获取收到的授权请求列表
@@ -467,7 +401,6 @@ export const getAuthorizationHistory = async (params?: {
 
 // 导出所有API函数作为默认对象
 export default {
-  getFileStatistics,
   getAuthorizationRequests,
   approveAuthorization,
   rejectAuthorization,

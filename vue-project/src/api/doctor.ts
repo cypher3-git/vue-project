@@ -133,77 +133,6 @@ export const getMedicalDataList = async (params?: {
 }
 
 /**
- * ✅ 获取医生端统计数据
- * 
- * @description 获取医生工作台的关键统计指标
- * 
- * @returns Promise<ApiResponse> - 统计数据
- * 
- * @后端处理逻辑:
- * 1. 验证医生身份（从token获取医生ID）
- * 2. 统计以下指标：
- *    a. 数据总数：医生科室可访问的所有患者数据数量
- *    b. 已授权数据：授权状态为'authorized'的数据数量
- *    c. 待授权数据：授权状态为'pending'的数据数量
- *    d. 今日已查看：今天医生实际查看/下载的数据数量
- * 3. 从相关数据表查询并汇总
- * 4. 返回统计结果
- * 
- * @后端返回数据:
- * {
- *   success: true,
- *   message: "统计成功",
- *   data: {
- *     totalPatients: number,      // 数据总数（注：命名保持兼容，实际是数据总数）
- *     activeShares: number,       // 已授权数据数量
- *     pendingRequests: number,    // 待授权数据数量
- *     todayAccess: number         // 今日已查看数据数量
- *   }
- * }
- * 
- * @调用位置:
- * - src/views/doctor/DataManagementView.vue (数据管理页面顶部统计卡片)
- * - 通过 mockService.getDoctorStatistics() 调用（演示账户使用模拟数据）
- * 
- * @统计规则:
- * - 数据总数：包括所有授权状态的数据（未申请、待审批、已授权、已拒绝）
- * - 已授权数据：只统计当前有效的授权（未过期、未被撤销）
- * - 待授权数据：只统计状态为'pending'的授权申请
- * - 今日已查看：统计今天00:00至当前时间的访问记录
- * 
- * @应用场景:
- * - 数据管理页面顶部展示关键指标
- * - 帮助医生快速了解工作量和待办事项
- * - 页面初始化时加载
- * 
- * @缓存建议:
- * - 可以对统计数据进行短时间缓存（如5分钟）
- * - 减少数据库查询压力
- * - 实时性要求不高的统计数据
- * 
- * @example
- * const response = await getDoctorStatistics()
- * // {
- * //   totalPatients: 156,      // 共156条可访问数据
- * //   activeShares: 89,        // 其中89条已授权
- * //   pendingRequests: 12,     // 12条待患者审批
- * //   todayAccess: 34          // 今天已查看34条
- * // }
- */
-export const getDoctorStatistics = async (): Promise<ApiResponse<{
-  totalPatients: number
-  activeShares: number
-  pendingRequests: number
-  todayAccess: number
-}>> => {
-  // 如果启用了模拟数据，返回模拟数据
-  const mockResponse = await mockService.getDoctorStatistics()
-  if (mockResponse) return mockResponse as any
-  
-  return request.get('/doctor/statistics')
-}
-
-/**
  * ✅ 获取医生的数据访问历史
  * 
  * @description 查询医生访问患者数据的完整历史记录
@@ -317,6 +246,5 @@ export const getAccessHistory = async (params?: {
 // 导出所有API函数作为默认对象
 export default {
   getMedicalDataList,
-  getDoctorStatistics,
   getAccessHistory
 }

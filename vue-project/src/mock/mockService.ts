@@ -89,41 +89,6 @@ class MockService {
   }
 
   /**
-   * 患者端 - 获取访问统计
-   */
-  async getAccessStatistics(params?: any) {
-    // 只有演示账户才返回模拟数据
-    if (!MOCK_CONFIG.USE_MOCK_DATA || !isDemoAccount()) return null
-    
-    mockLog('获取访问统计', params)
-    await mockDelay()
-    
-    // 计算统计数据
-    const records = mockPatientData.accessRecords
-    const today = new Date()
-    const todayStr = today.toISOString().split('T')[0]
-    
-    // 本周的开始日期
-    const weekStart = new Date(today)
-    weekStart.setDate(today.getDate() - today.getDay())
-    
-    // 本月的开始日期
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-    
-    // 计算不同时间段的访问次数
-    const todayCount = records.filter(r => r.accessTime.startsWith(todayStr)).length
-    const weekCount = records.filter(r => new Date(r.accessTime) >= weekStart).length
-    const monthCount = records.filter(r => new Date(r.accessTime) >= monthStart).length
-    
-    return createMockResponse({
-      todayCount: todayCount,
-      weekCount: weekCount,
-      monthCount: monthCount,
-      totalCount: records.length
-    })
-  }
-
-  /**
    * 医生端 - 获取授权患者列表
    */
   async getDoctorPatients(params?: any) {
@@ -168,19 +133,6 @@ class MockService {
       page,
       pageSize
     })
-  }
-
-  /**
-   * 医生端 - 获取统计数据
-   */
-  async getDoctorStatistics() {
-    // 只有演示账户才返回模拟数据
-    if (!MOCK_CONFIG.USE_MOCK_DATA || !isDemoAccount()) return null
-    
-    mockLog('获取医生端统计数据')
-    await mockDelay()
-    
-    return createMockResponse(mockDoctorData.statistics)
   }
 
   /**

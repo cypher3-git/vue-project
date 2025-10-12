@@ -569,56 +569,6 @@ onMounted(async () => {
   gap: 12px;
 }
 
-/* 统计卡片 */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.stat-card.today {
-  background: linear-gradient(135deg, #52c41a, #389e0d);
-  color: white;
-}
-
-.stat-card.week {
-  background: linear-gradient(135deg, #1890ff, #096dd9);
-  color: white;
-}
-
-.stat-card.month {
-  background: linear-gradient(135deg, #fa8c16, #d46b08);
-  color: white;
-}
-
-.stat-card.total {
-  background: linear-gradient(135deg, #722ed1, #531dab);
-  color: white;
-}
-
-.stat-content {
-  text-align: center;
-  padding: 16px 0;
-}
-
-.stat-number {
-  font-size: 32px;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
 /* 筛选区域 */
 .filter-card {
   border: none;
@@ -811,10 +761,6 @@ onMounted(async () => {
     gap: 16px;
   }
   
-  .stats-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
   .filter-row {
     flex-direction: column;
     align-items: stretch;
@@ -839,12 +785,6 @@ onMounted(async () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .stats-row {
-    grid-template-columns: 1fr;
   }
 }
 </style>

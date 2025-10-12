@@ -404,15 +404,6 @@ export const mockPatientData = {
       notes: '贫血症状初步诊断',
       status: 'granted'
     }
-  ],
-
-  // 统计数据
-  statistics: {
-    totalFiles: 6,
-    sharedFiles: 4,
-    monthlyAccessCount: 15,
-    storageUsed: '22.5 MB',
-    storageTotal: '500 MB'
-  }
+  ]
 }
 

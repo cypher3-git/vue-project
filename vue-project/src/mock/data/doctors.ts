@@ -187,16 +187,6 @@ export const mockDoctorData = {
     }
   ],
 
-  // 统计数据
-  statistics: {
-    totalPatients: 5,
-    activeAuthorizations: 3,
-    expiringAuthorizations: 1,
-    todayAccess: 8,
-    activeShares: 15,
-    monthlyAccess: 45
-  },
-
   // 可访问的医疗数据列表（新的数据管理模块）
   accessibleMedicalData: [
     {
