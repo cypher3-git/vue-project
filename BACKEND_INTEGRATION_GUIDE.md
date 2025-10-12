@@ -124,32 +124,36 @@ type MedicalFile struct {
 - 新增 `AuthorizationCount` 字段记录授权请求数量
 - Category 新增 `medication` 类型（用药记录）
 
-### 2.5 授权请求模型 (AuthorizationRequest)
+### 2.5 授权请求模型 (AuthorizationRequest) - 简化版
 
 ```go
 type AuthorizationRequest struct {
     ID              string    `json:"id" gorm:"primaryKey"`
     DoctorID        string    `json:"doctorId" gorm:"not null;index"`
     PatientID       string    `json:"patientId" gorm:"not null;index"`
-    DataID          string    `json:"dataId" gorm:"not null;index"`  // 医疗数据ID
-    Reason          string    `json:"reason" gorm:"not null"`        // 申请原因
-    Purpose         string    `json:"purpose" gorm:"not null"`       // 申请目的: "diagnosis" | "evaluation" | "research" | "consultation" | "other"
-    Status          string    `json:"status" gorm:"default:pending"` // "pending" | "approved" | "rejected" | "expired"
-    RequestedAt     time.Time `json:"requestedAt"`
-    ProcessedAt     time.Time `json:"processedAt,omitempty"`
-    ExpiresAt       time.Time `json:"expiresAt,omitempty"`          // 授权有效期（审批通过后设置）
-    RejectReason    string    `json:"rejectReason,omitempty"`       // 拒绝原因
-    Notes           string    `json:"notes,omitempty"`              // 患者审批备注
+    DataID          string    `json:"dataId" gorm:"not null;index"`    // 医疗数据ID（申请访问的具体文件）
+    DataName        string    `json:"dataName" gorm:"not null"`        // 数据文件名称
+    DataType        string    `json:"dataType" gorm:"not null"`        // 数据类型："report" | "image" | "prescription" | "medication"
+    Status          string    `json:"status" gorm:"default:pending"`   // "pending" | "approved" | "rejected" | "expired"
+    CreatedAt       time.Time `json:"createdAt" gorm:"autoCreateTime"` // 创建时间
+    ProcessedAt     time.Time `json:"processedAt,omitempty"`           // 处理时间（批准或拒绝）
+    RejectReason    string    `json:"rejectReason,omitempty"`          // 拒绝理由（可选）
 }
 ```
 
-**授权流程说明**:
-1. 医生发现患者上传的医疗数据（数据列表中数据对所有医生可见，但未授权时看不到所属患者）
-2. 医生对感兴趣的数据发起授权请求，说明访问原因和目的
-3. 患者在"授权管理"页面收到请求，可以查看数据详情和医生信息
-4. 患者选择"同意"或"拒绝"授权请求
-5. 同意后，医生可以在"数据管理"页面查看该数据的完整信息（包括所属患者）
-6. 医生可以点击"查看数据"访问数据内容
+**简化说明**：
+- ✅ **以单文件为单位**：每次申请针对一个具体的医疗数据文件
+- ❌ 移除 `Reason`（申请理由）：简化流程，医生直接申请即可
+- ❌ 移除 `Purpose`（申请目的）：简化流程，减少填写负担
+- ❌ 移除 `ExpiresAt`：授权长期有效，除非患者主动撤销
+- ❌ 移除 `Notes`：简化流程
+
+**授权流程说明**：
+1. 医生在"数据管理"页面看到患者上传的数据（看不到患者信息）
+2. 医生点击"申请授权"，系统自动发起申请（无需填写理由）
+3. 患者在"授权管理"页面收到请求，看到数据名称、类型和医生信息
+4. 患者选择"同意"或"拒绝"（拒绝可填写理由）
+5. 同意后，医生可以查看该数据的完整信息（包括所属患者）和数据内容
 
 ### 2.6 访问记录模型 (AccessRecord)
 
