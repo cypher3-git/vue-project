@@ -191,27 +191,10 @@ export const logout = async (): Promise<ApiResponse> => {
  *     name: string,
  *     phone: string,
  *     role: "patient" | "doctor",
- *     avatar?: string,
- *     isActive: boolean,
- *     isPhoneVerified: boolean,
- *     lastLoginAt: string,
  *     createdAt: string,
- *     updatedAt: string,
- *     // 患者特有字段
- *     age?: number,
- *     gender?: "male" | "female",
- *     idCard?: string,
- *     birthDate?: string,
- *     emergencyContact?: {...},
- *     medicalHistory?: string[],
- *     allergies?: string[],
- *     // 医生特有字段
- *     hospital?: string,
- *     department?: string,
- *     title?: string,
- *     licenseNumber?: string,
- *     specialties?: string[],
- *     isVerified: boolean
+ *     idCard?: string,  // 身份证号（患者）
+ *     department?: string,  // 科室（医生）
+ *     hospital?: string  // 医院（医生）
  *   }
  * }
  * 
@@ -234,63 +217,14 @@ export const getCurrentUser = async (): Promise<ApiResponse<User>> => {
 }
 
 /**
- * ✅ 更新用户个人信息
+ * ⚠️ 更新用户个人信息（MVP暂不支持）
  * 
  * @description 更新当前登录用户的个人资料
  * 
- * @param profileData - 要更新的个人信息（所有字段可选）
- * @param profileData.name - 姓名
- * @param profileData.phone - 手机号（需要验证码确认）
- * @param profileData.avatar - 头像URL
- * @param profileData.age - 年龄（患者）
- * @param profileData.gender - 性别（患者）
- * @param profileData.emergencyContact - 紧急联系人（患者）
- * @param profileData.medicalHistory - 病史（患者）
- * @param profileData.allergies - 过敏史（患者）
- * @param profileData.hospital - 医院（医生）
- * @param profileData.department - 科室（医生）
- * @param profileData.title - 职称（医生）
- * @param profileData.specialties - 专业领域（医生）
- * @param profileData.experience - 从业年限（医生）
- * @param profileData.qualification - 学历（医生）
- * 
+ * @param profileData - 要更新的个人信息（MVP阶段暂不支持此功能）
  * @returns Promise<ApiResponse<User>> - 更新后的用户信息
  * 
- * @后端处理逻辑:
- * 1. 验证用户身份（从token获取）
- * 2. 验证更新数据的合法性：
- *    - 如果更新手机号，需要验证新手机号的验证码
- *    - 如果更新敏感信息，可能需要二次验证
- * 3. 检查数据唯一性（如新手机号是否被占用）
- * 4. 更新用户信息到数据库
- * 5. 更新 updatedAt 时间戳
- * 6. 返回更新后的完整用户信息
- * 
- * @后端返回数据:
- * {
- *   success: true,
- *   message: "更新成功",
- *   data: User  // 更新后的完整用户对象
- * }
- * 
- * @调用位置:
- * - src/stores/auth.ts:102
- * 
- * @注意事项:
- * - 部分字段（如角色role）不允许通过此接口修改
- * - 手机号修改需要验证新手机号的验证码
- * - 患者和医生的可修改字段不同
- * 
- * @example
- * await updateProfile({
- *   name: '张三',
- *   avatar: 'https://example.com/avatar.jpg',
- *   emergencyContact: {
- *     name: '李四',
- *     phone: '13900139000',
- *     relation: '配偶'
- *   }
- * })
+ * @注意: MVP阶段暂不支持此功能，后期扩展时再实现
  */
 export const updateProfile = async (profileData: UpdateProfileData): Promise<ApiResponse<User>> => {
   return request.put('/auth/profile', profileData)

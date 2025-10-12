@@ -55,28 +55,14 @@ type User struct {
 }
 ```
 
-**简化说明**：
-- 移除 `Avatar`（头像）：非核心功能
-- 移除 `IsActive`（激活状态）：基础版不需要账户封禁
-- 移除 `IsPhoneVerified`（手机验证）：验证码登录本身已验证
-- 移除 `LastLoginAt`（最后登录）：统计功能，非必需
-- 移除 `UpdatedAt`（更新时间）：基础版不需要
-- 保留 `CreatedAt`（创建时间）：数据库自动生成，方便调试
 
 ### 2.2 患者用户扩展模型 (PatientUser)
 
 ```go
 type PatientUser struct {
-    UserID           string    `json:"userId" gorm:"primaryKey"`
-    Age              int       `json:"age,omitempty"`
-    Gender           string    `json:"gender,omitempty"` // "male" | "female"
-    IDCard           string    `json:"idCard,omitempty" gorm:"unique"`
-    BirthDate        string    `json:"birthDate,omitempty"`
-    EmergencyContact string    `json:"emergencyContact,omitempty"` // JSON string
-    MedicalHistory   string    `json:"medicalHistory,omitempty"`   // JSON array
-    Allergies        string    `json:"allergies,omitempty"`        // JSON array
-    CreatedAt        time.Time `json:"createdAt"`
-    UpdatedAt        time.Time `json:"updatedAt"`
+    UserID    string    `json:"userId" gorm:"primaryKey"`     // 用户ID
+    IDCard    string    `json:"idCard,omitempty" gorm:"unique"` // 身份证号（注册时使用）
+    CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
 }
 ```
 

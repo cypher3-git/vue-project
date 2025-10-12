@@ -16,17 +16,7 @@ export interface User {
 // 患者用户扩展信息
 export interface PatientUser extends User {
   role: 'patient'
-  age?: number
-  gender?: Gender
-  idCard?: string
-  birthDate?: string
-  emergencyContact?: {
-    name: string
-    phone: string
-    relation: string
-  }
-  medicalHistory?: string[]
-  allergies?: string[]
+  idCard?: string  // 身份证号（注册时使用，从中提取姓名、性别、出生日期）
 }
 
 // 医生用户扩展信息（简化版）
@@ -100,28 +90,10 @@ export interface RegisterResponse {
   }
 }
 
-// 用户资料更新数据
+// 用户资料更新数据（简化版 - MVP暂不支持资料更新功能）
 export interface UpdateProfileData {
-  name?: string
-  phone?: string
-  avatar?: string
-  // 患者特有字段
-  age?: number
-  gender?: Gender
-  emergencyContact?: {
-    name: string
-    phone: string
-    relation: string
-  }
-  medicalHistory?: string[]
-  allergies?: string[]
-  // 医生特有字段
-  hospital?: string
-  department?: string
-  title?: string
-  specialties?: string[]
-  experience?: number
-  qualification?: string
+  // MVP阶段暂不支持更新资料
+  // 如需扩展，可添加必要字段
 }
 
 // 密码修改数据（已废弃，系统不再使用密码）
