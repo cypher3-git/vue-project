@@ -1,16 +1,35 @@
 // 医疗文件类别枚举
+// - report: 检验报告
+// - image: 医学影像
+// - prescription: 处方记录
+// - other: 其他类型
 export type FileCategory = 'report' | 'image' | 'prescription' | 'other'
 
-// 文件状态枚举  
+// 文件状态枚举
+// - uploading: 上传中
+// - processing: 处理中
+// - completed: 已完成
+// - failed: 上传失败
 export type FileStatus = 'uploading' | 'processing' | 'completed' | 'failed'
 
-// 分享状态枚举
+// 分享状态枚举（已废弃 - 改用授权机制）
+// - active: 活跃状态
+// - expired: 已过期
+// - revoked: 已撤销
 export type ShareStatus = 'active' | 'expired' | 'revoked'
 
-// 授权状态枚举
+// 授权状态枚举（核心字段 - MVP）
+// - not-requested: 未申请（医生尚未发起授权请求）
+// - pending: 待审批（医生已申请，等待患者处理）
+// - approved: 已批准（患者已同意，医生可查看）
+// - rejected: 已拒绝（患者拒绝授权）
+// - expired: 已过期（授权已过期，需重新申请）
 export type AuthorizationStatus = 'not-requested' | 'pending' | 'approved' | 'rejected' | 'expired'
 
-// 访问权限枚举
+// 访问权限枚举（已废弃 - 改用授权机制）
+// - view: 查看权限
+// - download: 下载权限
+// - share: 分享权限
 export type AccessPermission = 'view' | 'download' | 'share'
 
 // 医疗文件基础接口
