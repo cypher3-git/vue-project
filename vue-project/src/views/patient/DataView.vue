@@ -11,28 +11,6 @@
       </div>
     </div>
 
-    <!-- 数据统计卡片 -->
-    <div class="stats-row">
-      <el-card class="stat-card">
-        <div class="stat-content">
-          <div class="stat-number">{{ totalData }}</div>
-          <div class="stat-label">总数据条目</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card">
-        <div class="stat-content">
-          <div class="stat-number">{{ authorizedData }}</div>
-          <div class="stat-label">授权中数据</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card">
-        <div class="stat-content">
-          <div class="stat-number">{{ recentUpload }}</div>
-          <div class="stat-label">本月新增</div>
-        </div>
-      </el-card>
-    </div>
-
     <!-- 筛选和搜索区域 -->
     <el-card class="filter-card">
       <div class="filter-row">
@@ -456,14 +434,6 @@ const pdfTotalPages = ref(0)
 const fullscreenMode = ref(false)
 const imageLoaded = ref(false)
 const imageError = ref(false)
-
-// 统计数据
-const totalData = computed(() => medicalDataStore.totalFiles)
-const authorizedData = computed(() => {
-  // 计算已授权或授权中的数据数量
-  return medicalDataStore.files.filter((f: any) => f.authStatus === 'authorized' || f.authStatus === '待审批').length
-})
-const recentUpload = computed(() => medicalDataStore.recentFiles.length)
 
 // 筛选条件
 const filters = ref({

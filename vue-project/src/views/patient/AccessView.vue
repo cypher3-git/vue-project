@@ -15,34 +15,6 @@
       </div>
     </div>
 
-    <!-- 访问统计卡片 -->
-    <div class="stats-row">
-      <el-card class="stat-card today">
-        <div class="stat-content">
-          <div class="stat-number">{{ todayAccess }}</div>
-          <div class="stat-label">今日访问</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card week">
-        <div class="stat-content">
-          <div class="stat-number">{{ weekAccess }}</div>
-          <div class="stat-label">本周访问</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card month">
-        <div class="stat-content">
-          <div class="stat-number">{{ monthAccess }}</div>
-          <div class="stat-label">本月访问</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card total">
-        <div class="stat-content">
-          <div class="stat-number">{{ totalAccess }}</div>
-          <div class="stat-label">总访问次数</div>
-        </div>
-      </el-card>
-    </div>
-
     <!-- 筛选和搜索区域 -->
     <el-card class="filter-card">
       <div class="filter-row">
@@ -302,39 +274,6 @@ const detailDialogVisible = ref(false)
 const viewMode = ref('table')
 const selectedRecord = ref(null)
 
-// 统计数据
-const statistics = ref({
-  todayAccess: 0,
-  weekAccess: 0,
-  monthAccess: 0,
-  totalAccess: 0
-})
-
-const todayAccess = computed(() => statistics.value.todayAccess)
-const weekAccess = computed(() => statistics.value.weekAccess)
-const monthAccess = computed(() => statistics.value.monthAccess)
-const totalAccess = computed(() => statistics.value.totalAccess)
-
-// 加载统计数据
-const loadStatistics = async () => {
-  try {
-    const response = await accessApi.getAccessStatistics({
-      timeRange: 'all'
-    })
-    
-    if (response.success && response.data) {
-      statistics.value = {
-        todayAccess: response.data.todayCount || 0,
-        weekAccess: response.data.weekCount || 0,
-        monthAccess: response.data.monthCount || 0,
-        totalAccess: response.data.totalCount || 0
-      }
-    }
-  } catch (error) {
-    console.error('加载统计数据失败:', error)
-  }
-}
-
 // 筛选条件
 const filters = ref({
   dateRange: [] as any[],
@@ -516,10 +455,7 @@ const formatDateTime = (dateTime: string) => {
 // 处理函数
 const refreshData = async () => {
   try {
-    await Promise.all([
-      loadStatistics(),
-      loadAccessRecords()
-    ])
+    await loadAccessRecords()
     ElMessage.success('数据已刷新')
   } catch (error) {
     console.error('刷新数据失败:', error)
@@ -564,10 +500,7 @@ const exportRecords = async () => {
 
 // 组件挂载时初始化
 onMounted(async () => {
-  await Promise.all([
-    loadStatistics(),
-    loadAccessRecords()
-  ])
+  await loadAccessRecords()
 })
 </script>
 

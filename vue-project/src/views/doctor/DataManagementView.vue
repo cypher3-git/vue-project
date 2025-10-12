@@ -11,34 +11,6 @@
       </div>
     </div>
 
-    <!-- 数据统计卡片 -->
-    <div class="stats-row">
-      <el-card class="stat-card total">
-        <div class="stat-content">
-          <div class="stat-number">{{ totalDataCount }}</div>
-          <div class="stat-label">数据总数</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card authorized">
-        <div class="stat-content">
-          <div class="stat-number">{{ authorizedCount }}</div>
-          <div class="stat-label">已授权数据</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card pending">
-        <div class="stat-content">
-          <div class="stat-number">{{ pendingCount }}</div>
-          <div class="stat-label">待授权数据</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card today">
-        <div class="stat-content">
-          <div class="stat-number">{{ todayViewed }}</div>
-          <div class="stat-label">今日已查看</div>
-        </div>
-      </el-card>
-    </div>
-
     <!-- 筛选和搜索区域 -->
     <el-card class="filter-card">
       <div class="filter-row">
@@ -284,19 +256,6 @@ const viewDialogVisible = ref(false)
 const selectedData = ref<any>(null)
 const submitting = ref(false)
 
-// 统计数据
-const statistics = ref({
-  totalDataCount: 0,
-  authorizedCount: 0,
-  pendingCount: 0,
-  todayViewed: 0
-})
-
-const totalDataCount = computed(() => statistics.value.totalDataCount)
-const authorizedCount = computed(() => statistics.value.authorizedCount)
-const pendingCount = computed(() => statistics.value.pendingCount)
-const todayViewed = computed(() => statistics.value.todayViewed)
-
 // 筛选条件
 const filters = ref({
   dataType: '',
@@ -401,14 +360,6 @@ const loadDataList = async () => {
     ]
     
     pagination.value.total = dataList.value.length
-    
-    // 更新统计数据
-    statistics.value = {
-      totalDataCount: dataList.value.length,
-      authorizedCount: dataList.value.filter(d => d.authStatus === 'authorized').length,
-      pendingCount: dataList.value.filter(d => d.authStatus === 'pending').length,
-      todayViewed: 3
-    }
   } catch (error) {
     console.error('加载数据列表失败:', error)
     ElMessage.error('加载数据列表失败')

@@ -5,28 +5,6 @@
       <h2>授权管理</h2>
     </div>
 
-    <!-- 统计卡片 -->
-    <div class="stats-row">
-      <el-card class="stat-card pending">
-        <div class="stat-content">
-          <div class="stat-number">{{ pendingCount }}</div>
-          <div class="stat-label">待处理请求</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card approved">
-        <div class="stat-content">
-          <div class="stat-number">{{ approvedCount }}</div>
-          <div class="stat-label">已授权</div>
-        </div>
-      </el-card>
-      <el-card class="stat-card rejected">
-        <div class="stat-content">
-          <div class="stat-number">{{ rejectedCount }}</div>
-          <div class="stat-label">已拒绝</div>
-        </div>
-      </el-card>
-    </div>
-
     <!-- 筛选区域 -->
     <el-card class="filter-card">
       <div class="filter-row">
@@ -338,11 +316,6 @@ const rejectRules: FormRules = {
 
 // 请求列表
 const requestList = ref<any[]>([])
-
-// 统计数据
-const pendingCount = computed(() => requestList.value.filter(r => r.status === 'pending').length)
-const approvedCount = computed(() => requestList.value.filter(r => r.status === 'approved').length)
-const rejectedCount = computed(() => requestList.value.filter(r => r.status === 'rejected').length)
 
 // 加载授权请求列表
 const loadRequests = async () => {
