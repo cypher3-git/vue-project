@@ -1,264 +1,372 @@
 # API 接口文档
 
-本目录包含了医疗数据管理系统前端的所有 API 接口定义。
+本目录包含医疗数据管理系统前端的所有 API 接口定义。
 
-## 📁 目录结构
+## 📊 模块概览
 
-```
-src/api/
-├── auth.ts           # 用户认证相关API
-├── medicalData.ts    # 医疗数据管理API
-├── share.ts          # 数据分享管理API
-├── access.ts         # 访问记录管理API
-├── doctor.ts         # 医生端功能API
-├── patient.ts        # 患者端功能API
-├── index.ts          # 统一导出入口
-└── README.md         # 本文档
-```
+| 模块 | 文件 | API 数量 | 说明 |
+|------|------|---------|------|
+| 认证模块 | `auth.ts` | 7 | 用户登录、注册、个人信息管理 |
+| 医疗数据 | `medicalData.ts` | 1 | 患者医疗数据查询 |
+| 医生端 | `doctor.ts` | 3 | 医生数据管理、统计、访问历史 |
+| 患者端 | `patient.ts` | 6 | 授权管理、文件统计 |
+| 访问记录 | `access.ts` | 3 | 访问统计、记录查询、导出 |
+| **总计** | - | **20** | - |
 
-## 🔐 auth.ts - 用户认证API
+## 📁 文件说明
 
-提供用户登录、注册、权限管理等功能。
+### 1. auth.ts - 认证模块（7个API）
 
-### 主要接口：
-- `login()` - 手机号密码登录
-- `loginWithIdCard()` - 身份证号登录
-- `loginWithPhoneCode()` - 手机验证码登录
-- `register()` - 用户注册
-- `logout()` - 退出登录
-- `refreshToken()` - 刷新令牌
-- `getCurrentUser()` - 获取当前用户信息
-- `updateProfile()` - 更新个人资料
-- `changePassword()` - 修改密码
-- `sendVerificationCode()` - 发送验证码
-- `resetPassword()` - 重置密码
-- `getDoctorVerificationStatus()` - 获取医生认证状态
-- `submitDoctorVerification()` - 提交医生认证材料
+用户认证和个人信息管理相关接口。
 
-## 📄 medicalData.ts - 医疗数据管理API
+**API列表：**
+- ✅ `login()` - 手机号验证码登录
+- ✅ `register()` - 用户注册
+- ✅ `logout()` - 退出登录
+- ✅ `getCurrentUser()` - 获取当前用户信息
+- ✅ `updateProfile()` - 更新个人信息
+- ✅ `refreshToken()` - 刷新访问令牌
+- ✅ `sendVerificationCode()` - 发送手机验证码
 
-提供医疗文件的完整生命周期管理。
+**使用位置：**
+- `stores/auth.ts` - 认证状态管理
+- `views/auth/LoginView.vue` - 登录页面
+- `views/auth/RegisterView.vue` - 注册页面
 
-### 主要接口：
-- `getMedicalFiles()` - 获取医疗文件列表（支持分页、筛选）
-- `getMedicalFileById()` - 获取单个文件详情
-- `uploadMedicalFile()` - 上传医疗文件（支持进度回调）
-- `updateMedicalFile()` - 更新文件信息
-- `deleteMedicalFile()` - 删除文件
-- `downloadMedicalFile()` - 下载文件
-- `previewMedicalFile()` - 预览文件
-- `getFileShareStatus()` - 获取文件分享状态
-- `batchOperateFiles()` - 批量操作文件
-- `getFileStatistics()` - 获取文件统计信息
-- `exportMedicalData()` - 导出医疗数据
-- `getDataTraceability()` - 获取数据溯源信息
-- `verifyFileIntegrity()` - 验证文件完整性
-- `searchMedicalFiles()` - 搜索医疗文件
-- `getRecentFiles()` - 获取最近上传的文件
+---
 
-## 🔗 share.ts - 数据分享管理API
+### 2. medicalData.ts - 医疗数据模块（1个API）
 
-管理医疗数据的分享、权限控制等功能。
+医疗数据查询相关接口。
 
-### 主要接口：
-- `createShare()` - 创建文件分享
-- `getMyShares()` - 获取我的分享记录
-- `getReceivedShares()` - 获取收到的分享（医生端）
-- `getShareById()` - 获取分享详情
-- `getShareByToken()` - 通过分享链接获取信息
-- `updateShare()` - 更新分享记录
-- `revokeShare()` - 撤销分享
-- `batchRevokeShares()` - 批量撤销分享
-- `extendShareExpiration()` - 延长分享有效期
-- `getFileShares()` - 获取文件的所有分享
-- `getSharesWithDoctor()` - 获取与特定医生的分享
-- `getShareStatistics()` - 获取分享统计信息
-- `checkSharePermission()` - 检查分享权限
-- `generateShareLink()` - 生成分享链接
-- `accessSharedFile()` - 访问共享文件
+**API列表：**
+- ✅ `getMedicalFiles()` - 获取医疗文件列表
 
-## 📊 access.ts - 访问记录管理API
+**使用位置：**
+- `views/patient/DataView.vue` - 我的数据页面
 
-记录和查询医疗数据的访问历史。
+---
 
-### 主要接口：
-- `getMyAccessRecords()` - 获取我的访问记录（患者端）
-- `getDoctorAccessHistory()` - 获取医生访问历史
-- `getAccessRecordById()` - 获取访问记录详情
-- `getFileAccessRecords()` - 获取特定文件的访问记录
-- `getDoctorAccessRecords()` - 获取特定医生的访问记录
-- `recordAccess()` - 记录文件访问
-- `getAccessStatistics()` - 获取访问统计信息
-- `getRecentAccessRecords()` - 获取最近访问记录
-- `getAbnormalAccessRecords()` - 获取异常访问记录
-- `exportAccessRecords()` - 导出访问记录
-- `getAccessHeatmap()` - 获取访问热力图数据
-- `getFileAccessRanking()` - 获取文件访问排行榜
+### 3. doctor.ts - 医生端模块（3个API）
 
-## 👨‍⚕️ doctor.ts - 医生端功能API
+医生端数据管理相关接口。
 
-医生端专用的患者管理和数据访问功能。
+**API列表：**
+- ✅ `getMedicalDataList()` - 获取可访问的医疗数据列表
+- ✅ `getDoctorStatistics()` - 获取医生端统计数据
+- ✅ `getAccessHistory()` - 获取访问历史记录
 
-### 主要接口：
-- `getPatientList()` - 获取患者列表
-- `getPatientById()` - 获取患者详情
-- `searchPatients()` - 搜索患者
-- `getPatientFiles()` - 获取患者的医疗文件
-- `requestPatientDataAccess()` - 申请访问患者数据
-- `getMyPermissionRequests()` - 获取我的权限申请
-- `getPermissionRequestById()` - 获取申请详情
-- `cancelPermissionRequest()` - 撤销权限申请
-- `getSharedFiles()` - 获取收到的分享文件
-- `accessPatientFile()` - 访问患者文件
-- `downloadSharedFile()` - 下载共享文件
-- `getAccessHistory()` - 获取访问历史
-- `getDoctorStatistics()` - 获取医生端统计数据
-- `addPatientNote()` - 添加患者备注
-- `getPatientNotes()` - 获取患者备注
-- `toggleFavoritePatient()` - 标记常用患者
-- `getFavoritePatients()` - 获取常用患者列表
+**使用位置：**
+- `views/doctor/DataManagementView.vue` - 数据管理页面
 
-## 🏥 patient.ts - 患者端功能API
+**权限说明：**
+- 未授权数据：只显示数据基本信息，患者信息显示为"需授权后可见"
+- 已授权数据：显示完整的数据和患者信息
 
-患者端专用的数据管理和权限控制功能。
+---
 
-### 主要接口：
-- `getFileStatistics()` - 获取文件统计信息
-- `getPermissionRequests()` - 获取权限申请列表
-- `processPermissionRequest()` - 审批权限申请
-- `batchProcessRequests()` - 批量审批申请
-- `getAuthorizedDoctors()` - 获取已授权的医生
-- `getDoctorById()` - 获取医生详情
-- `searchDoctors()` - 搜索医生
-- `getDoctorShares()` - 获取与医生的分享记录
-- `getDoctorAccessRecords()` - 获取医生的访问记录
-- `revokeAllDoctorAccess()` - 撤销医生的所有权限
-- `addDoctorNote()` - 添加医生备注
-- `getDoctorNotes()` - 获取医生备注
-- `toggleTrustedDoctor()` - 标记信任的医生
-- `getTrustedDoctors()` - 获取信任的医生列表
-- `getAccessOverview()` - 获取访问概览
-- `getSecurityEvents()` - 获取安全事件记录
-- `resolveSecurityEvent()` - 标记安全事件为已处理
-- `getPrivacySettings()` - 获取隐私设置
-- `updatePrivacySettings()` - 更新隐私设置
+### 4. patient.ts - 患者端模块（6个API）
 
-## 📦 使用方法
+患者端授权管理和统计相关接口。
 
-### 方式1：命名导入（推荐）
+**API列表：**
+- ✅ `getFileStatistics()` - 获取文件统计信息
+- ✅ `getAuthorizationRequests()` - 获取授权请求列表
+- ✅ `approveAuthorization()` - 同意授权申请
+- ✅ `rejectAuthorization()` - 拒绝授权申请
+- ✅ `revokeAuthorization()` - 撤销已授予的授权
+- ✅ `getAuthorizationHistory()` - 获取授权历史记录
+
+**使用位置：**
+- `views/patient/DataView.vue` - 我的数据页面
+- `views/patient/AuthorizationView.vue` - 授权管理页面
+
+**授权流程：**
+1. 医生发起授权申请 → `pending` 状态
+2. 患者审批：
+   - 同意 → `approved` 状态，医生可访问数据
+   - 拒绝 → `rejected` 状态，医生需重新申请
+3. 患者可随时撤销授权 → `revoked` 状态
+
+---
+
+### 5. access.ts - 访问记录模块（3个API）
+
+数据访问记录和统计相关接口。
+
+**API列表：**
+- ✅ `getAccessStatistics()` - 获取访问统计信息
+- ✅ `getMyAccessRecords()` - 获取访问记录列表
+- ✅ `exportAccessRecords()` - 导出访问记录
+
+**使用位置：**
+- `views/patient/AccessView.vue` - 访问记录页面
+
+**访问类型：**
+- `view`: 查看数据
+- `download`: 下载数据
+- `preview`: 预览数据
+
+---
+
+## 🔄 使用方式
+
+### 方式1：从统一入口导入（推荐）
 
 ```typescript
-import { authApi, medicalDataApi, shareApi } from '@/api'
+import { authApi, medicalDataApi } from '@/api'
 
-// 使用认证API
+// 登录
 await authApi.login({ 
   phone: '13800138000', 
-  password: '123456', 
+  code: '123456',
   role: 'patient' 
 })
 
-// 使用医疗数据API
+// 获取医疗文件
 const files = await medicalDataApi.getMedicalFiles({ 
-  category: 'report',
+  category: '检验报告',
   page: 1,
   pageSize: 10 
 })
+```
 
-// 使用分享API
-await shareApi.createShare({
-  fileIds: ['file-id-1', 'file-id-2'],
-  doctorId: 'doctor-id',
-  permissions: ['view', 'download'],
-  expiresAt: '2025-12-31'
+### 方式2：直接导入单个API
+
+```typescript
+import { login, register } from '@/api/auth'
+import { getMedicalFiles } from '@/api/medicalData'
+
+await login({ phone: '13800138000', code: '123456', role: 'patient' })
+```
+
+### 方式3：在Store中使用
+
+```typescript
+import { defineStore } from 'pinia'
+import { authApi } from '@/api'
+
+export const useAuthStore = defineStore('auth', () => {
+  const login = async (credentials) => {
+    const response = await authApi.login(credentials)
+    // 处理响应...
+  }
+  
+  return { login }
 })
 ```
 
-### 方式2：默认导入
+---
+
+## 🎯 模拟数据支持
+
+部分API支持模拟数据，用于演示账户展示完整功能。
+
+### 启用条件
+
+模拟数据仅对**演示账户**生效：
+- 患者演示账户：手机号 `13800138000`
+- 医生演示账户：手机号 `13900139000`
+- 判断依据：token 以 `demo_token_` 开头
+
+### 支持模拟数据的API
+
+- `getMedicalFiles()` - 患者医疗文件列表
+- `getMedicalDataList()` - 医生可访问数据列表
+- `getDoctorStatistics()` - 医生统计数据
+- `getAccessHistory()` - 医生访问历史
+- `getDoctorAccessibleData()` - 医生可访问数据
+
+### 配置文件
+
+模拟数据配置：`src/config/mock.config.ts`
 
 ```typescript
-import api from '@/api'
-
-// 所有API都在api对象下
-await api.auth.login({ ... })
-await api.medicalData.uploadMedicalFile({ ... })
-await api.share.revokeShare('share-id')
-```
-
-### 方式3：直接导入单个函数
-
-```typescript
-import { login, getCurrentUser } from '@/api/auth'
-import { uploadMedicalFile, downloadMedicalFile } from '@/api/medicalData'
-
-await login({ ... })
-const user = await getCurrentUser()
-```
-
-## 🔧 API 响应格式
-
-所有API接口返回统一的响应格式：
-
-```typescript
-interface ApiResponse<T = any> {
-  success: boolean      // 是否成功
-  message: string       // 响应消息
-  data?: T             // 响应数据（可选）
-  code?: number        // 状态码（可选）
-  errors?: Record<string, string[]>  // 错误信息（可选）
+export const MOCK_CONFIG = {
+  USE_MOCK_DATA: true,     // 是否启用模拟数据
+  MOCK_DELAY: 300,         // 模拟请求延迟（毫秒）
+  ENABLE_MOCK_LOG: true    // 是否打印模拟日志
 }
 ```
 
-### 分页数据格式
+---
+
+## 📝 API 注释规范
+
+每个API函数包含以下详细注释：
+
+1. **功能描述** (`@description`)
+2. **参数说明** (`@param`)
+   - 参数名称和类型
+   - 参数含义和取值范围
+   - 可选参数标注
+3. **返回值** (`@returns`)
+4. **后端处理逻辑** (`@后端处理逻辑`)
+   - 详细的处理步骤
+   - 业务规则说明
+5. **返回数据结构** (`@后端返回数据`)
+   - 完整的JSON结构
+   - 字段说明
+6. **调用位置** (`@调用位置`)
+   - 文件路径和行号
+7. **使用示例** (`@example`)
+
+**示例：**
 
 ```typescript
-interface PaginatedData<T> {
-  items: T[]           // 数据列表
-  total: number        // 总数
-  page: number         // 当前页
-  pageSize: number     // 每页数量
-  totalPages: number   // 总页数
+/**
+ * ✅ 用户登录
+ * 
+ * @description 使用手机号+验证码+角色进行登录
+ * 
+ * @param credentials - 登录凭证
+ * @param credentials.phone - 手机号（11位）
+ * @param credentials.code - 验证码（6位）
+ * @param credentials.role - 用户角色
+ * 
+ * @returns Promise<LoginResponse> - 登录结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证手机号和验证码
+ * 2. 查询用户信息
+ * 3. 生成JWT token
+ * 4. 返回用户信息和token
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "登录成功",
+ *   data: {
+ *     user: User,
+ *     token: string,
+ *     refreshToken: string,
+ *     expiresIn: number
+ *   }
+ * }
+ * 
+ * @调用位置:
+ * - src/stores/auth.ts:37
+ * 
+ * @example
+ * await login({
+ *   phone: '13800138000',
+ *   code: '123456',
+ *   role: 'patient'
+ * })
+ */
+export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+  return request.post('/auth/login', credentials)
 }
 ```
 
-## 🛡️ 错误处理
+---
 
-所有API调用都应该包含错误处理：
+## 🗑️ 已删除的API
 
-```typescript
-try {
-  const response = await medicalDataApi.uploadMedicalFile(uploadData)
-  if (response.success) {
-    console.log('上传成功:', response.data)
-  } else {
-    console.error('上传失败:', response.message)
-  }
-} catch (error) {
-  console.error('请求出错:', error)
-}
-```
+以下API已被删除（未在前端使用）：
 
-## 📝 注意事项
+### auth.ts（12个）
+- ❌ loginWithIdCard
+- ❌ loginWithPhoneCode  
+- ❌ changePassword
+- ❌ verifyCode
+- ❌ sendResetPasswordSms
+- ❌ resetPassword
+- ❌ bindPhone
+- ❌ unbindPhone
+- ❌ getDoctorVerificationStatus
+- ❌ submitDoctorVerification
+- ❌ checkUsernameAvailability
+- ❌ checkPhoneExists
+- ❌ getSessionInfo
+- ❌ logoutAllDevices
 
-1. **认证要求**：除了登录、注册等公开接口外，其他接口都需要在请求头中携带 Token
-2. **权限控制**：某些接口有角色限制，患者端接口只能患者调用，医生端接口只能医生调用
-3. **文件上传**：上传接口支持进度回调，可用于显示上传进度条
-4. **文件下载**：下载接口会自动触发浏览器下载，无需额外处理
-5. **类型安全**：所有接口都有完整的 TypeScript 类型定义，使用时会有代码提示
+### medicalData.ts（14个）
+- ❌ getMedicalFileById
+- ❌ uploadMedicalFile
+- ❌ updateMedicalFile
+- ❌ deleteMedicalFile
+- ❌ downloadMedicalFile
+- ❌ previewMedicalFile
+- ❌ getFileShareStatus
+- ❌ batchOperateFiles
+- ❌ getFileStatistics
+- ❌ exportMedicalData
+- ❌ getDataTraceability
+- ❌ verifyFileIntegrity
+- ❌ searchMedicalFiles
+- ❌ getRecentFiles
+- ❌ getFileAccessCount
 
-## 🔗 相关文档
+### doctor.ts（21个）
+- ❌ getPatientList
+- ❌ getPatientById
+- ❌ searchPatients
+- ❌ getPatientFiles
+- ❌ requestPatientDataAccess
+- ❌ getMyPermissionRequests
+- ❌ getPermissionRequestById
+- ❌ cancelPermissionRequest
+- ❌ getSharedFiles
+- ❌ accessPatientFile
+- ❌ downloadSharedFile
+- ❌ addPatientNote
+- ❌ getPatientNotes
+- ❌ toggleFavoritePatient
+- ❌ getFavoritePatients
+- ❌ requestDataAuthorization
+- ❌ getAuthorizationStatus
+- ❌ getMyAuthorizationRequests
 
-- [类型定义文档](../types/README.md)
-- [Store状态管理文档](../stores/README.md)
-- [路由配置文档](../router/README.md)
+### patient.ts（18个）
+- ❌ getPermissionRequests
+- ❌ processPermissionRequest
+- ❌ batchProcessRequests
+- ❌ getAuthorizedDoctors
+- ❌ getDoctorById
+- ❌ searchDoctors
+- ❌ getDoctorShares
+- ❌ getDoctorAccessRecords
+- ❌ revokeAllDoctorAccess
+- ❌ addDoctorNote
+- ❌ getDoctorNotes
+- ❌ toggleTrustedDoctor
+- ❌ getTrustedDoctors
+- ❌ getAccessOverview
+- ❌ getSecurityEvents
+- ❌ resolveSecurityEvent
+- ❌ getPrivacySettings
+- ❌ updatePrivacySettings
 
-## 📅 更新日志
+### share.ts（16个，整个文件已删除）
+- ❌ 所有分享相关API
 
-- **2025-10-04**: 完成所有API模块的初始实现
-  - ✅ 认证模块 (auth.ts)
-  - ✅ 医疗数据管理模块 (medicalData.ts)
-  - ✅ 数据分享模块 (share.ts)
-  - ✅ 访问记录模块 (access.ts)
-  - ✅ 医生端功能模块 (doctor.ts)
-  - ✅ 患者端功能模块 (patient.ts)
-  - ✅ 统一导出入口 (index.ts)
+### access.ts（10个）
+- ❌ getDoctorAccessHistory
+- ❌ getAccessRecordById
+- ❌ getFileAccessRecords
+- ❌ getDoctorAccessRecords
+- ❌ recordAccess
+- ❌ getRecentAccessRecords
+- ❌ getAbnormalAccessRecords
+- ❌ getAccessHeatmap
+- ❌ getFileAccessRanking
 
+**删除原因：**
+- 代码中未调用
+- 简化API维护
+- 减少不必要的代码
+
+---
+
+## 📚 相关文档
+
+- [API使用情况详细分析](../../API_USAGE_ANALYSIS.md) - 完整的API使用情况报告
+- [Mock数据配置](../config/mock.config.ts) - 模拟数据配置说明
+- [类型定义](../types/) - TypeScript类型定义
+
+---
+
+**最后更新**: 2025-10-12  
+**API总数**: 20个  
+**文档维护**: 每次API变更后需同步更新此文档

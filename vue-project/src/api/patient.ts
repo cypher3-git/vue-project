@@ -1,342 +1,174 @@
 /**
  * 患者端相关API接口
- * 提供患者仪表板、权限管理、医生管理等功能
+ * 提供授权管理、文件统计等功能
  */
 
 import request from '@/utils/request'
 import type { ApiResponse, PaginatedData } from '@/types/auth'
 import type {
-  MedicalFile,
-  ShareRecord,
-  AccessRecord,
   FileStatistics,
   AuthorizationRequest,
   ApproveAuthorizationData,
-  RejectAuthorizationData,
-  AuthorizationListResponse
+  RejectAuthorizationData
 } from '@/types/medicalData'
 import { mockService } from '@/mock/mockService'
 
-// 医生基本信息
-export interface DoctorInfo {
-  id: string
-  name: string
-  hospital: string
-  department: string
-  title?: string
-  licenseNumber: string
-  specialties?: string[]
-  experience?: number
-  isVerified: boolean
-  // 关联统计
-  sharedFilesCount: number
-  accessCount: number
-  lastAccessTime?: string
-}
-
-// 权限请求（患者视角）
-export interface PatientPermissionRequest {
-  id: string
-  doctorId: string
-  patientId: string
-  requestReason: string
-  requestedFiles?: string[]
-  requestedPermissions: string[]
-  expiresAt: string
-  status: 'pending' | 'approved' | 'rejected' | 'expired'
-  createdAt: string
-  processedAt?: string
-  rejectReason?: string
-  doctor: DoctorInfo
-}
+// ==================== 已使用的API（6个）====================
 
 /**
- * 获取患者的医疗文件统计
- * @returns 文件统计数据
+ * ✅ 获取患者的医疗文件统计
+ * 
+ * @description 获取患者数据的各项统计指标，用于仪表板展示
+ * 
+ * @returns Promise<ApiResponse<FileStatistics>> - 文件统计数据
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份（从token获取患者ID）
+ * 2. 统计以下指标：
+ *    a. 总数据条目：患者上传的所有医疗数据数量
+ *    b. 授权中数据：有授权请求（待审批或已授权）的数据数量
+ *    c. 本月新增：本月上传的新数据数量
+ *    d. 按数据类型统计：各类型数据的数量分布
+ * 3. 从医疗数据表和授权表查询汇总
+ * 4. 返回统计结果
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "统计成功",
+ *   data: {
+ *     totalFiles: number,          // 总数据条目
+ *     authorizedFiles: number,     // 授权中数据（待审批+已授权）
+ *     recentUploads: number,       // 本月新增数据
+ *     filesByCategory: {           // 按类型统计
+ *       '检验报告': number,
+ *       '影像资料': number,
+ *       '病历记录': number,
+ *       '体检报告': number,
+ *       '用药记录': number
+ *     },
+ *     storageUsed: string          // 存储空间使用量（如"125.6 MB"）
+ *   }
+ * }
+ * 
+ * @调用位置:
+ * - src/views/patient/DataView.vue (我的数据页面顶部统计卡片)
+ * 
+ * @应用场景:
+ * - 在"我的数据"页面展示数据概览
+ * - 帮助患者快速了解自己的数据情况
+ * - 页面初始化时加载
+ * 
+ * @缓存建议:
+ * - 可以对统计数据进行短时间缓存（如5分钟）
+ * - 数据上传后需要清除缓存
+ * 
+ * @example
+ * const response = await getFileStatistics()
+ * // {
+ * //   totalFiles: 45,
+ * //   authorizedFiles: 12,
+ * //   recentUploads: 8,
+ * //   filesByCategory: {
+ * //     '检验报告': 15,
+ * //     '影像资料': 10,
+ * //     ...
+ * //   }
+ * // }
  */
 export const getFileStatistics = async (): Promise<ApiResponse<FileStatistics>> => {
   return request.get('/patient/statistics/files')
 }
 
 /**
- * 获取收到的权限申请列表
- * @param params 查询参数
- * @returns 权限申请列表
- */
-export const getPermissionRequests = async (params?: {
-  status?: 'pending' | 'approved' | 'rejected' | 'expired'
-  doctorId?: string
-  page?: number
-  pageSize?: number
-}): Promise<ApiResponse<PaginatedData<PatientPermissionRequest>>> => {
-  return request.get('/patient/permission-requests', { params })
-}
-
-/**
- * 审批权限申请
- * @param requestId 申请ID
- * @param action 操作（approve 或 reject）
- * @param rejectReason 拒绝原因（拒绝时必填）
- * @returns 审批结果
- */
-export const processPermissionRequest = async (
-  requestId: string,
-  action: 'approve' | 'reject',
-  rejectReason?: string
-): Promise<ApiResponse> => {
-  return request.post(`/patient/permission-requests/${requestId}/${action}`, {
-    rejectReason
-  })
-}
-
-/**
- * 批量审批权限申请
- * @param requestIds 申请ID列表
- * @param action 操作
- * @returns 批量审批结果
- */
-export const batchProcessRequests = async (
-  requestIds: string[],
-  action: 'approve' | 'reject'
-): Promise<ApiResponse<{
-  successCount: number
-  failedCount: number
-  errors?: Array<{ requestId: string; error: string }>
-}>> => {
-  return request.post('/patient/permission-requests/batch-process', {
-    requestIds,
-    action
-  })
-}
-
-/**
- * 获取已授权的医生列表
- * @param params 查询参数
- * @returns 医生列表
- */
-export const getAuthorizedDoctors = async (params?: {
-  keyword?: string
-  hasActiveShare?: boolean
-  page?: number
-  pageSize?: number
-}): Promise<ApiResponse<PaginatedData<DoctorInfo>>> => {
-  return request.get('/patient/authorized-doctors', { params })
-}
-
-/**
- * 根据ID获取医生详细信息
- * @param doctorId 医生ID
- * @returns 医生详细信息
- */
-export const getDoctorById = async (doctorId: string): Promise<ApiResponse<DoctorInfo>> => {
-  return request.get(`/patient/doctors/${doctorId}`)
-}
-
-/**
- * 搜索医生
- * @param keyword 搜索关键词
- * @returns 搜索结果
- */
-export const searchDoctors = async (keyword: string): Promise<ApiResponse<DoctorInfo[]>> => {
-  return request.get('/patient/doctors/search', {
-    params: { keyword }
-  })
-}
-
-/**
- * 获取与特定医生的分享记录
- * @param doctorId 医生ID
- * @param params 查询参数
- * @returns 分享记录列表
- */
-export const getDoctorShares = async (
-  doctorId: string,
-  params?: {
-    status?: 'active' | 'expired' | 'revoked'
-    page?: number
-    pageSize?: number
-  }
-): Promise<ApiResponse<PaginatedData<ShareRecord>>> => {
-  return request.get(`/patient/doctors/${doctorId}/shares`, { params })
-}
-
-/**
- * 获取医生对患者数据的访问记录
- * @param doctorId 医生ID
- * @param params 查询参数
- * @returns 访问记录列表
- */
-export const getDoctorAccessRecords = async (
-  doctorId: string,
-  params?: {
-    fileId?: string
-    startDate?: string
-    endDate?: string
-    page?: number
-    pageSize?: number
-  }
-): Promise<ApiResponse<PaginatedData<AccessRecord>>> => {
-  return request.get(`/patient/doctors/${doctorId}/access-records`, { params })
-}
-
-/**
- * 撤销医生的所有访问权限
- * @param doctorId 医生ID
- * @returns 撤销结果
- */
-export const revokeAllDoctorAccess = async (doctorId: string): Promise<ApiResponse> => {
-  return request.post(`/patient/doctors/${doctorId}/revoke-all`)
-}
-
-/**
- * 添加医生备注
- * @param doctorId 医生ID
- * @param note 备注内容
- * @returns 添加结果
- */
-export const addDoctorNote = async (
-  doctorId: string,
-  note: string
-): Promise<ApiResponse> => {
-  return request.post(`/patient/doctors/${doctorId}/notes`, { note })
-}
-
-/**
- * 获取医生备注列表
- * @param doctorId 医生ID
- * @returns 备注列表
- */
-export const getDoctorNotes = async (doctorId: string): Promise<ApiResponse<Array<{
-  id: string
-  note: string
-  createdAt: string
-}>>> => {
-  return request.get(`/patient/doctors/${doctorId}/notes`)
-}
-
-/**
- * 标记信任的医生
- * @param doctorId 医生ID
- * @param isTrusted 是否信任
- * @returns 操作结果
- */
-export const toggleTrustedDoctor = async (
-  doctorId: string,
-  isTrusted: boolean
-): Promise<ApiResponse> => {
-  return request.post(`/patient/doctors/${doctorId}/trust`, { isTrusted })
-}
-
-/**
- * 获取信任的医生列表
- * @returns 信任的医生列表
- */
-export const getTrustedDoctors = async (): Promise<ApiResponse<DoctorInfo[]>> => {
-  return request.get('/patient/doctors/trusted')
-}
-
-/**
- * 获取数据访问概览
- * @param params 查询参数
- * @returns 访问概览数据
- */
-export const getAccessOverview = async (params?: {
-  startDate?: string
-  endDate?: string
-}): Promise<ApiResponse<{
-  totalAccess: number
-  uniqueDoctors: number
-  mostAccessedFiles: Array<{
-    fileId: string
-    fileName: string
-    category: string
-    accessCount: number
-  }>
-  accessByDoctor: Array<{
-    doctorId: string
-    doctorName: string
-    hospital: string
-    accessCount: number
-    lastAccessTime: string
-  }>
-  accessTrend: Array<{
-    date: string
-    count: number
-  }>
-}>> => {
-  return request.get('/patient/access-overview', { params })
-}
-
-/**
- * 获取安全事件记录
- * @param params 查询参数
- * @returns 安全事件列表
- */
-export const getSecurityEvents = async (params?: {
-  type?: 'abnormal_access' | 'unauthorized_attempt' | 'data_export'
-  severity?: 'low' | 'medium' | 'high'
-  startDate?: string
-  endDate?: string
-  page?: number
-  pageSize?: number
-}): Promise<ApiResponse<PaginatedData<{
-  id: string
-  type: string
-  severity: string
-  description: string
-  relatedDoctor?: DoctorInfo
-  relatedFile?: MedicalFile
-  occurredAt: string
-  isResolved: boolean
-  resolvedAt?: string
-}>>> => {
-  return request.get('/patient/security-events', { params })
-}
-
-/**
- * 标记安全事件为已处理
- * @param eventId 事件ID
- * @returns 操作结果
- */
-export const resolveSecurityEvent = async (eventId: string): Promise<ApiResponse> => {
-  return request.post(`/patient/security-events/${eventId}/resolve`)
-}
-
-/**
- * 获取隐私设置
- * @returns 隐私设置
- */
-export const getPrivacySettings = async (): Promise<ApiResponse<{
-  autoApproveRequests: boolean
-  allowAnonymousSharing: boolean
-  requireReasonForAccess: boolean
-  notifyOnAccess: boolean
-  maxShareDuration: number
-  allowedDepartments: string[]
-}>> => {
-  return request.get('/patient/privacy-settings')
-}
-
-/**
- * 更新隐私设置
- * @param settings 隐私设置
- * @returns 更新结果
- */
-export const updatePrivacySettings = async (settings: {
-  autoApproveRequests?: boolean
-  allowAnonymousSharing?: boolean
-  requireReasonForAccess?: boolean
-  notifyOnAccess?: boolean
-  maxShareDuration?: number
-  allowedDepartments?: string[]
-}): Promise<ApiResponse> => {
-  return request.put('/patient/privacy-settings', settings)
-}
-
-/**
- * 获取授权请求列表
- * @param params 查询参数
- * @returns 授权请求列表
+ * ✅ 获取收到的授权请求列表
+ * 
+ * @description 获取医生发起的数据访问授权请求列表，患者可以审批这些请求
+ * 
+ * @param params - 查询参数（可选）
+ * @param params.status - 按状态筛选
+ *   - 'pending': 待审批
+ *   - 'approved': 已同意
+ *   - 'rejected': 已拒绝
+ * @param params.page - 页码（默认1）
+ * @param params.pageSize - 每页数量（默认20）
+ * 
+ * @returns Promise<ApiResponse<PaginatedData<AuthorizationRequest>>> - 授权请求列表
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份（从token获取患者ID）
+ * 2. 查询授权请求表（authorization_requests）
+ * 3. 筛选条件：
+ *    - patient_id = 当前患者ID
+ *    - status = params.status (如果提供)
+ * 4. 关联查询医生信息：
+ *    - 医生姓名、医院、科室、职称
+ *    - 医生认证状态
+ * 5. 关联查询数据信息：
+ *    - 数据名称、类型、上传时间
+ * 6. 按请求时间倒序排列（待审批的优先）
+ * 7. 分页处理
+ * 8. 返回授权请求列表
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "查询成功",
+ *   data: {
+ *     data: [
+ *       {
+ *         id: string,              // 授权请求ID
+ *         dataId: string,          // 申请访问的数据ID
+ *         dataName: string,        // 数据名称
+ *         dataType: string,        // 数据类型
+ *         dataUploadDate: string,  // 数据上传时间
+ *         doctor: {                // 申请医生信息
+ *           id: string,
+ *           name: string,
+ *           hospital: string,
+ *           department: string,
+ *           title: string,
+ *           isVerified: boolean    // 是否已认证
+ *         },
+ *         reason: string,          // 申请理由
+ *         status: string,          // 审批状态
+ *         requestedAt: string,     // 申请时间
+ *         processedAt?: string,    // 处理时间
+ *         expiresAt?: string,      // 授权过期时间（已批准时）
+ *         rejectReason?: string    // 拒绝理由（已拒绝时）
+ *       },
+ *       // ... 更多请求
+ *     ],
+ *     total: number,
+ *     page: number,
+ *     pageSize: number
+ *   }
+ * }
+ * 
+ * @调用位置:
+ * - src/views/patient/AuthorizationView.vue:352 (授权管理页面)
+ * - 注释状态，需要取消注释以启用
+ * 
+ * @应用场景:
+ * - 患者查看收到的所有授权申请
+ * - 筛选待处理的授权请求
+ * - 查看历史授权记录
+ * 
+ * @注意事项:
+ * - 待审批的请求应该优先展示
+ * - 已过期的授权应该有明显标识
+ * - 显示医生的认证状态，帮助患者判断
+ * 
+ * @example
+ * // 获取所有授权请求
+ * const response = await getAuthorizationRequests()
+ * 
+ * // 只看待审批的请求
+ * const response = await getAuthorizationRequests({
+ *   status: 'pending',
+ *   page: 1,
+ *   pageSize: 10
+ * })
  */
 export const getAuthorizationRequests = async (params?: {
   status?: 'pending' | 'approved' | 'rejected'
@@ -348,9 +180,75 @@ export const getAuthorizationRequests = async (params?: {
 }
 
 /**
- * 同意授权申请
- * @param approveData 授权数据
- * @returns 操作结果
+ * ✅ 同意授权申请
+ * 
+ * @description 患者同意医生的数据访问授权申请
+ * 
+ * @param approveData - 授权数据
+ * @param approveData.requestId - 授权请求ID
+ * @param approveData.expiresIn - 授权有效期（天数，如7、30、90）
+ * @param approveData.notes - 备注信息（可选）
+ * 
+ * @returns Promise<ApiResponse> - 操作结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份和权限
+ * 2. 查询授权请求记录：
+ *    - 验证请求是否存在
+ *    - 验证请求是否属于当前患者
+ *    - 验证请求状态是否为'pending'
+ * 3. 更新授权请求状态：
+ *    - status = 'approved'
+ *    - processedAt = 当前时间
+ *    - expiresAt = 当前时间 + expiresIn天
+ * 4. 创建授权记录表项（authorizations）：
+ *    - 用于快速查询有效授权
+ *    - 包含授权范围和权限
+ * 5. 发送通知给医生：
+ *    - 站内消息
+ *    - 可选：短信或邮件通知
+ * 6. 记录操作日志
+ * 7. 返回成功响应
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "授权成功"
+ * }
+ * 
+ * @调用位置:
+ * - src/views/patient/AuthorizationView.vue:491 (授权管理页面-同意按钮)
+ * - 注释状态，需要取消注释以启用
+ * 
+ * @应用场景:
+ * - 患者审批医生的授权申请
+ * - 设置授权有效期
+ * - 添加授权备注
+ * 
+ * @错误处理:
+ * - 400: 请求参数错误
+ * - 403: 无权操作（不是自己的数据）
+ * - 404: 授权请求不存在
+ * - 409: 请求状态已变更（不是pending）
+ * 
+ * @注意事项:
+ * - 授权一旦同意，在有效期内医生可以随时访问
+ * - 患者可以随时撤销授权
+ * - 授权过期后需要重新申请
+ * 
+ * @example
+ * // 同意授权，有效期7天
+ * await approveAuthorization({
+ *   requestId: 'req-123',
+ *   expiresIn: 7,
+ *   notes: '请妥善保管我的数据'
+ * })
+ * 
+ * // 同意授权，有效期30天
+ * await approveAuthorization({
+ *   requestId: 'req-456',
+ *   expiresIn: 30
+ * })
  */
 export const approveAuthorization = async (approveData: ApproveAuthorizationData): Promise<ApiResponse> => {
   return request.post(`/patient/authorization-requests/${approveData.requestId}/approve`, {
@@ -360,9 +258,62 @@ export const approveAuthorization = async (approveData: ApproveAuthorizationData
 }
 
 /**
- * 拒绝授权申请
- * @param rejectData 拒绝数据
- * @returns 操作结果
+ * ✅ 拒绝授权申请
+ * 
+ * @description 患者拒绝医生的数据访问授权申请
+ * 
+ * @param rejectData - 拒绝数据
+ * @param rejectData.requestId - 授权请求ID
+ * @param rejectData.reason - 拒绝理由（必填）
+ * 
+ * @returns Promise<ApiResponse> - 操作结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份和权限
+ * 2. 查询授权请求记录：
+ *    - 验证请求是否存在
+ *    - 验证请求是否属于当前患者
+ *    - 验证请求状态是否为'pending'
+ * 3. 更新授权请求状态：
+ *    - status = 'rejected'
+ *    - processedAt = 当前时间
+ *    - rejectReason = 拒绝理由
+ * 4. 发送通知给医生：
+ *    - 告知授权请求被拒绝
+ *    - 可选：包含拒绝理由（如果不涉及隐私）
+ * 5. 记录操作日志
+ * 6. 返回成功响应
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "已拒绝授权申请"
+ * }
+ * 
+ * @调用位置:
+ * - src/views/patient/AuthorizationView.vue:533 (授权管理页面-拒绝按钮)
+ * - 注释状态，需要取消注释以启用
+ * 
+ * @应用场景:
+ * - 患者拒绝医生的授权申请
+ * - 说明拒绝理由（如数据敏感、不信任等）
+ * 
+ * @错误处理:
+ * - 400: 请求参数错误（如缺少拒绝理由）
+ * - 403: 无权操作
+ * - 404: 授权请求不存在
+ * - 409: 请求状态已变更
+ * 
+ * @注意事项:
+ * - 拒绝理由是必填的，帮助医患沟通
+ * - 拒绝后医生可以重新发起申请
+ * - 多次拒绝同一医生可能需要标记异常
+ * 
+ * @example
+ * await rejectAuthorization({
+ *   requestId: 'req-789',
+ *   reason: '暂时不需要就诊，谢谢'
+ * })
  */
 export const rejectAuthorization = async (rejectData: RejectAuthorizationData): Promise<ApiResponse> => {
   return request.post(`/patient/authorization-requests/${rejectData.requestId}/reject`, {
@@ -371,18 +322,137 @@ export const rejectAuthorization = async (rejectData: RejectAuthorizationData): 
 }
 
 /**
- * 撤销授权
- * @param authorizationId 授权ID
- * @returns 操作结果
+ * ✅ 撤销已授予的授权
+ * 
+ * @description 患者主动撤销之前授予医生的数据访问权限
+ * 
+ * @param authorizationId - 授权记录ID（不是授权请求ID）
+ * 
+ * @returns Promise<ApiResponse> - 操作结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份和权限
+ * 2. 查询授权记录：
+ *    - 验证授权是否存在
+ *    - 验证授权是否属于当前患者
+ *    - 验证授权是否处于有效状态
+ * 3. 更新授权状态：
+ *    - status = 'revoked'
+ *    - revokedAt = 当前时间
+ * 4. 清除授权缓存（如Redis中的权限缓存）
+ * 5. 发送通知给医生：
+ *    - 告知授权已被撤销
+ *    - 之后将无法访问该数据
+ * 6. 记录操作日志
+ * 7. 返回成功响应
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "授权已撤销"
+ * }
+ * 
+ * @调用位置:
+ * - 可能在未来的授权管理界面中使用
+ * - 或在数据详情页的授权列表中使用
+ * 
+ * @应用场景:
+ * - 患者不再信任某医生，撤销访问权限
+ * - 治疗结束后撤销授权
+ * - 发现异常访问行为后立即撤销
+ * 
+ * @注意事项:
+ * - 撤销是立即生效的
+ * - 撤销后医生正在进行的访问会被终止
+ * - 撤销记录会永久保留用于审计
+ * - 医生需要重新申请才能再次访问
+ * 
+ * @example
+ * await revokeAuthorization('auth-123')
  */
 export const revokeAuthorization = async (authorizationId: string): Promise<ApiResponse> => {
   return request.post(`/patient/authorizations/${authorizationId}/revoke`)
 }
 
 /**
- * 获取授权历史
- * @param params 查询参数
- * @returns 授权历史列表
+ * ✅ 获取授权历史记录
+ * 
+ * @description 查询患者授权的完整历史记录，包括所有状态
+ * 
+ * @param params - 查询参数（可选）
+ * @param params.dataId - 按数据ID筛选
+ * @param params.doctorId - 按医生ID筛选
+ * @param params.startDate - 开始日期
+ * @param params.endDate - 结束日期
+ * @param params.page - 页码
+ * @param params.pageSize - 每页数量
+ * 
+ * @returns Promise<ApiResponse<PaginatedData<AuthorizationRequest>>> - 授权历史列表
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份
+ * 2. 查询授权请求表
+ * 3. 条件筛选：
+ *    - patient_id = 当前患者ID
+ *    - data_id = params.dataId (如果提供)
+ *    - doctor_id = params.doctorId (如果提供)
+ *    - requested_at BETWEEN startDate AND endDate
+ * 4. 包含所有状态的记录（pending、approved、rejected、revoked）
+ * 5. 关联查询医生和数据信息
+ * 6. 按请求时间倒序排列
+ * 7. 分页处理
+ * 8. 返回历史记录列表
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "查询成功",
+ *   data: {
+ *     data: [
+ *       {
+ *         id: string,
+ *         dataId: string,
+ *         dataName: string,
+ *         doctor: {...},
+ *         status: string,          // pending/approved/rejected/revoked
+ *         requestedAt: string,
+ *         processedAt: string,
+ *         expiresAt: string,
+ *         rejectReason: string,
+ *         revokedAt: string
+ *       },
+ *       // ... 更多记录
+ *     ],
+ *     total: number,
+ *     page: number,
+ *     pageSize: number
+ *   }
+ * }
+ * 
+ * @调用位置:
+ * - 可能在授权管理页面的历史记录标签页中使用
+ * 
+ * @应用场景:
+ * - 查看某个数据的所有授权历史
+ * - 查看某个医生的授权申请历史
+ * - 生成授权报告
+ * - 审计和追溯
+ * 
+ * @example
+ * // 查看所有授权历史
+ * const response = await getAuthorizationHistory()
+ * 
+ * // 查看特定数据的授权历史
+ * const response = await getAuthorizationHistory({
+ *   dataId: 'data-123'
+ * })
+ * 
+ * // 查看特定医生的申请历史
+ * const response = await getAuthorizationHistory({
+ *   doctorId: 'doctor-456',
+ *   startDate: '2024-01-01',
+ *   endDate: '2024-12-31'
+ * })
  */
 export const getAuthorizationHistory = async (params?: {
   dataId?: string
@@ -398,28 +468,9 @@ export const getAuthorizationHistory = async (params?: {
 // 导出所有API函数作为默认对象
 export default {
   getFileStatistics,
-  getPermissionRequests,
-  processPermissionRequest,
-  batchProcessRequests,
-  getAuthorizedDoctors,
-  getDoctorById,
-  searchDoctors,
-  getDoctorShares,
-  getDoctorAccessRecords,
-  revokeAllDoctorAccess,
-  addDoctorNote,
-  getDoctorNotes,
-  toggleTrustedDoctor,
-  getTrustedDoctors,
-  getAccessOverview,
-  getSecurityEvents,
-  resolveSecurityEvent,
-  getPrivacySettings,
-  updatePrivacySettings,
   getAuthorizationRequests,
   approveAuthorization,
   rejectAuthorization,
   revokeAuthorization,
   getAuthorizationHistory
 }
-

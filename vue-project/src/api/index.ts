@@ -1,49 +1,57 @@
 /**
  * API统一导出文件
  * 集中导出所有API模块，便于统一管理和使用
+ * 
+ * 📊 API使用统计：
+ * - auth: 7个API（认证相关）
+ * - medicalData: 1个API（医疗数据查询）
+ * - doctor: 3个API（医生端功能）
+ * - patient: 6个API（患者端功能）
+ * - access: 3个API（访问记录）
+ * 
+ * ❌ 已删除的模块：
+ * - share: 16个API（未使用，已删除）
+ * 
+ * 总计：20个有效API
  */
 
 // 导入各个API模块
 import * as authApi from './auth'
 import * as medicalDataApi from './medicalData'
-import * as shareApi from './share'
-import * as accessApi from './access'
 import * as doctorApi from './doctor'
 import * as patientApi from './patient'
+import * as accessApi from './access'
 
 // 统一导出
 export {
   authApi,
   medicalDataApi,
-  shareApi,
-  accessApi,
   doctorApi,
-  patientApi
+  patientApi,
+  accessApi
 }
 
 // 默认导出所有API
 export default {
   auth: authApi,
   medicalData: medicalDataApi,
-  share: shareApi,
-  access: accessApi,
   doctor: doctorApi,
-  patient: patientApi
+  patient: patientApi,
+  access: accessApi
 }
 
 /**
  * 使用示例：
  * 
- * 方式1：命名导入
+ * 方式1：命名导入（推荐）
  * import { authApi, medicalDataApi } from '@/api'
- * authApi.login({ phone: '13800138000', password: '123456', role: 'patient' })
+ * await authApi.login({ phone: '13800138000', code: '123456', role: 'patient' })
  * 
  * 方式2：默认导入
  * import api from '@/api'
- * api.auth.login({ phone: '13800138000', password: '123456', role: 'patient' })
+ * await api.auth.login({ phone: '13800138000', code: '123456', role: 'patient' })
  * 
- * 方式3：直接导入单个模块
+ * 方式3：直接导入单个函数
  * import { login } from '@/api/auth'
- * login({ phone: '13800138000', password: '123456', role: 'patient' })
+ * await login({ phone: '13800138000', code: '123456', role: 'patient' })
  */
-

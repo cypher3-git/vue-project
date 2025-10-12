@@ -1,30 +1,125 @@
 /**
  * 医疗数据管理相关API接口
- * 提供医疗文件的上传、下载、查询、管理等功能
+ * 提供医疗文件的查询功能
  */
 
 import request from '@/utils/request'
-import type { ApiResponse } from '@/types/auth'
 import type {
-  MedicalFile,
-  UploadData,
-  UpdateFileData,
   FileQueryParams,
-  FileListResponse,
-  FileUploadResponse,
-  FileStatistics,
-  FileStatisticsResponse,
-  BatchOperationData,
-  ExportRequest,
-  DataTraceability,
-  IntegrityCheck
+  FileListResponse
 } from '@/types/medicalData'
 import { mockService } from '@/mock/mockService'
 
+// ==================== 已使用的API（1个）====================
+
 /**
- * 获取医疗文件列表
- * @param params 查询参数
- * @returns 文件列表及分页信息
+ * ✅ 获取医疗文件列表
+ * 
+ * @description 获取当前患者的所有医疗数据文件，支持筛选、搜索和分页
+ * 
+ * @param params - 查询参数（可选）
+ * @param params.page - 页码（默认1）
+ * @param params.pageSize - 每页数量（默认20）
+ * @param params.category - 数据类型筛选
+ *   - '检验报告': 实验室检验结果
+ *   - '影像资料': X光、CT、MRI等影像
+ *   - '病历记录': 门诊/住院病历
+ *   - '体检报告': 体检中心出具的报告
+ *   - '用药记录': 处方和用药历史
+ * @param params.keyword - 搜索关键词（匹配文件名、描述）
+ * @param params.startDate - 上传开始日期（YYYY-MM-DD）
+ * @param params.endDate - 上传结束日期（YYYY-MM-DD）
+ * @param params.authStatus - 授权状态筛选
+ *   - 'not-requested': 无授权请求
+ *   - 'pending': 待审批
+ *   - 'authorized': 已授权
+ * 
+ * @returns Promise<FileListResponse> - 文件列表和分页信息
+ * 
+ * @后端处理逻辑:
+ * 1. 验证用户身份（从token获取患者ID）
+ * 2. 构建查询条件：
+ *    - 基础条件: patient_id = 当前用户ID
+ *    - 类型筛选: category = params.category
+ *    - 关键词搜索: title LIKE %keyword% OR description LIKE %keyword%
+ *    - 日期范围: created_at BETWEEN startDate AND endDate
+ * 3. 查询医疗文件表
+ * 4. 关联查询授权信息：
+ *    - 统计每个文件的授权请求数
+ *    - 获取最新的授权状态
+ * 5. 按上传时间倒序排列
+ * 6. 分页处理
+ * 7. 返回文件列表和统计信息
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "查询成功",
+ *   data: {
+ *     files: [
+ *       {
+ *         id: string,              // 文件唯一ID
+ *         name: string,            // 文件名称
+ *         description: string,     // 文件描述
+ *         category: string,        // 数据类型
+ *         fileSize: string,        // 文件大小（如"2.3 MB"）
+ *         fileUrl: string,         // 文件访问URL
+ *         uploadedAt: string,      // 上传时间（ISO 8601）
+ *         authStatus: string,      // 授权状态
+ *         authorizationCount: number, // 授权请求数量
+ *         viewCount: number,       // 查看次数（医生查看）
+ *         hashedValue: string      // 文件哈希值（用于完整性验证）
+ *       },
+ *       // ... 更多文件
+ *     ],
+ *     total: number,               // 总记录数
+ *     page: number,                // 当前页码
+ *     pageSize: number             // 每页数量
+ *   }
+ * }
+ * 
+ * @调用位置:
+ * - src/views/patient/DataView.vue (我的数据页面)
+ * - 通过 mockService.getPatientFiles() 调用（演示账户使用模拟数据）
+ * 
+ * @模拟数据说明:
+ * - 如果是演示账户登录（token以'demo_token_'开头）
+ * - 会自动返回模拟数据，不调用真实后端API
+ * - 这样演示账户可以看到完整功能，不影响真实数据
+ * 
+ * @应用场景:
+ * - 患者查看自己上传的所有医疗数据
+ * - 按类型筛选数据（如只看检验报告）
+ * - 搜索特定的数据文件
+ * - 查看哪些数据有医生申请授权
+ * 
+ * @注意事项:
+ * - 只能查询当前登录患者自己的数据
+ * - 返回的文件URL应该是有权限控制的临时URL
+ * - 授权状态会影响医生是否能查看数据详情
+ * 
+ * @example
+ * // 获取所有数据
+ * const response = await getMedicalFiles()
+ * 
+ * // 筛选检验报告
+ * const response = await getMedicalFiles({
+ *   category: '检验报告',
+ *   page: 1,
+ *   pageSize: 10
+ * })
+ * 
+ * // 搜索关键词
+ * const response = await getMedicalFiles({
+ *   keyword: '血常规',
+ *   startDate: '2024-01-01',
+ *   endDate: '2024-12-31'
+ * })
+ * 
+ * // 查看待授权的数据
+ * const response = await getMedicalFiles({
+ *   authStatus: 'pending'
+ * })
  */
 export const getMedicalFiles = async (params?: FileQueryParams): Promise<FileListResponse> => {
   // 如果启用了模拟数据，返回模拟数据
@@ -34,233 +129,7 @@ export const getMedicalFiles = async (params?: FileQueryParams): Promise<FileLis
   return request.get('/medical-data/files', { params })
 }
 
-/**
- * 根据ID获取单个医疗文件详情
- * @param fileId 文件ID
- * @returns 文件详细信息
- */
-export const getMedicalFileById = async (fileId: string): Promise<ApiResponse<MedicalFile>> => {
-  return request.get(`/medical-data/files/${fileId}`)
-}
-
-/**
- * 上传医疗文件
- * @param data 上传数据（文件、标题、描述、分类）
- * @param onProgress 上传进度回调
- * @returns 上传后的文件信息
- */
-export const uploadMedicalFile = async (
-  data: UploadData,
-  onProgress?: (progress: number) => void
-): Promise<FileUploadResponse> => {
-  const formData = new FormData()
-  formData.append('file', data.file)
-  formData.append('title', data.title)
-  formData.append('description', data.description)
-  formData.append('category', data.category)
-
-  return request.post('/medical-data/files/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    },
-    onUploadProgress: (progressEvent) => {
-      if (onProgress && progressEvent.total) {
-        const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-        onProgress(progress)
-      }
-    }
-  })
-}
-
-/**
- * 更新医疗文件信息
- * @param fileId 文件ID
- * @param updateData 要更新的数据
- * @returns 更新结果
- */
-export const updateMedicalFile = async (
-  fileId: string,
-  updateData: UpdateFileData
-): Promise<ApiResponse<MedicalFile>> => {
-  return request.put(`/medical-data/files/${fileId}`, updateData)
-}
-
-/**
- * 删除医疗文件
- * @param fileId 文件ID
- * @returns 删除结果
- */
-export const deleteMedicalFile = async (fileId: string): Promise<ApiResponse> => {
-  return request.delete(`/medical-data/files/${fileId}`)
-}
-
-/**
- * 下载医疗文件
- * @param fileId 文件ID
- * @param fileName 保存的文件名
- * @returns 下载结果
- */
-export const downloadMedicalFile = async (fileId: string, fileName: string): Promise<void> => {
-  const response = await request.get(`/medical-data/files/${fileId}/download`, {
-    responseType: 'blob'
-  })
-  
-  // 创建下载链接
-  const url = window.URL.createObjectURL(new Blob([response as any]))
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', fileName)
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.URL.revokeObjectURL(url)
-}
-
-/**
- * 预览医疗文件
- * @param fileId 文件ID
- * @returns 预览URL
- */
-export const previewMedicalFile = async (fileId: string): Promise<ApiResponse<{ previewUrl: string }>> => {
-  return request.get(`/medical-data/files/${fileId}/preview`)
-}
-
-/**
- * 获取文件分享状态
- * @param fileId 文件ID
- * @returns 分享状态信息
- */
-export const getFileShareStatus = async (fileId: string): Promise<ApiResponse<{
-  isShared: boolean
-  shareCount: number
-  activeShares: number
-}>> => {
-  return request.get(`/medical-data/files/${fileId}/share-status`)
-}
-
-/**
- * 批量操作文件
- * @param operationData 批量操作数据
- * @returns 操作结果
- */
-export const batchOperateFiles = async (operationData: BatchOperationData): Promise<ApiResponse<{
-  successCount: number
-  failedCount: number
-  errors?: Array<{ fileId: string; error: string }>
-}>> => {
-  return request.post('/medical-data/files/batch', operationData)
-}
-
-/**
- * 获取文件统计信息
- * @returns 统计数据
- */
-export const getFileStatistics = async (): Promise<FileStatisticsResponse> => {
-  return request.get('/medical-data/statistics')
-}
-
-/**
- * 导出医疗数据
- * @param exportRequest 导出请求参数
- * @returns 导出文件
- */
-export const exportMedicalData = async (exportRequest: ExportRequest): Promise<void> => {
-  const response = await request.post('/medical-data/export', exportRequest, {
-    responseType: 'blob'
-  })
-  
-  // 根据format确定文件扩展名
-  const extension = exportRequest.format === 'zip' ? 'zip' : 'pdf'
-  const fileName = `medical_data_export_${Date.now()}.${extension}`
-  
-  // 创建下载链接
-  const url = window.URL.createObjectURL(new Blob([response as any]))
-  const link = document.createElement('a')
-  link.href = url
-  link.setAttribute('download', fileName)
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.URL.revokeObjectURL(url)
-}
-
-/**
- * 获取文件数据溯源信息
- * @param fileId 文件ID
- * @returns 溯源信息
- */
-export const getDataTraceability = async (fileId: string): Promise<ApiResponse<DataTraceability>> => {
-  return request.get(`/medical-data/files/${fileId}/traceability`)
-}
-
-/**
- * 验证文件完整性
- * @param fileId 文件ID
- * @returns 完整性验证结果
- */
-export const verifyFileIntegrity = async (fileId: string): Promise<ApiResponse<IntegrityCheck>> => {
-  return request.post(`/medical-data/files/${fileId}/verify-integrity`)
-}
-
-/**
- * 搜索医疗文件
- * @param keyword 搜索关键词
- * @param filters 过滤条件
- * @returns 搜索结果
- */
-export const searchMedicalFiles = async (
-  keyword: string,
-  filters?: Partial<FileQueryParams>
-): Promise<FileListResponse> => {
-  return request.get('/medical-data/files/search', {
-    params: {
-      keyword,
-      ...filters
-    }
-  })
-}
-
-/**
- * 获取最近上传的文件
- * @param limit 数量限制
- * @returns 最近文件列表
- */
-export const getRecentFiles = async (limit: number = 10): Promise<ApiResponse<MedicalFile[]>> => {
-  return request.get('/medical-data/files/recent', {
-    params: { limit }
-  })
-}
-
-/**
- * 获取文件访问次数
- * @param fileId 文件ID
- * @returns 访问统计
- */
-export const getFileAccessCount = async (fileId: string): Promise<ApiResponse<{
-  viewCount: number
-  downloadCount: number
-  shareCount: number
-}>> => {
-  return request.get(`/medical-data/files/${fileId}/access-count`)
-}
-
 // 导出所有API函数作为默认对象
 export default {
-  getMedicalFiles,
-  getMedicalFileById,
-  uploadMedicalFile,
-  updateMedicalFile,
-  deleteMedicalFile,
-  downloadMedicalFile,
-  previewMedicalFile,
-  getFileShareStatus,
-  batchOperateFiles,
-  getFileStatistics,
-  exportMedicalData,
-  getDataTraceability,
-  verifyFileIntegrity,
-  searchMedicalFiles,
-  getRecentFiles,
-  getFileAccessCount
+  getMedicalFiles
 }
-
