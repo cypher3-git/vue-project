@@ -3,15 +3,18 @@
 <div align="center">
 
 ![Vue版本](https://img.shields.io/badge/Vue-3.5.18-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue)
+![Element Plus](https://img.shields.io/badge/Element%20Plus-2.11-409EFF)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 一个现代化的医疗数据管理平台，让患者安全存储医疗数据，医生高效获取诊疗信息
 
-[功能特点](#功能特点) •
-[技术栈](#技术栈) •
-[快速开始](#快速开始) •
-[项目结构](#项目结构) •
-[API 文档](#api-文档)
+[功能特点](#-功能特点) •
+[技术栈](#-技术栈) •
+[快速开始](#-快速开始) •
+[在线演示](#-在线演示) •
+[项目结构](#-项目结构) •
+[API 文档](#-api-文档)
 
 </div>
 
@@ -19,99 +22,100 @@
 
 ## 📖 项目简介
 
-医联可信·数据溯源系统是一个基于区块链思想的医疗数据管理平台，旨在解决传统医疗数据管理中存在的问题：
+医联可信·数据溯源系统是一个基于现代Web技术的医疗数据管理平台，通过**患者授权机制**实现医患数据的安全共享：
 
-- **患者端**：安全存储医疗数据，主动控制数据分享权限，透明追踪数据访问记录
-- **医生端**：在患者授权下快速查看完整医疗历史，提高诊疗效率
+- **患者端**：安全存储医疗数据，主动控制授权权限，透明追踪数据访问记录
+- **医生端**：申请数据访问授权，在患者同意后查看医疗数据，提高诊疗效率
 
+### 核心理念
 
+✅ **患者主权** - 患者完全掌控自己的医疗数据  
+✅ **授权透明** - 所有数据访问必须经过明确授权  
+✅ **操作可追溯** - 完整记录每一次数据访问  
+✅ **隐私保护** - 未授权数据不显示患者信息  
+
+---
 
 ## ✨ 功能特点
 
 ### 🔐 安全的身份认证
-- 手机验证码登录，无需记忆复杂密码
-- 患者与医生角色分离，权限明确
-- JWT Token 认证，保障 API 安全
+- ✅ 手机验证码登录，无需记忆复杂密码
+- ✅ 身份证实名注册，确保用户真实性
+- ✅ 患者与医生角色分离，权限明确
+- ✅ JWT Token 认证，保障 API 安全
+- ✅ 演示账户支持，方便功能预览
 
-### 📁 智能数据管理
-- 支持多种格式医疗文件（PDF、图片、文档等）
-- 自动分类：检查报告、影像资料、处方单等
-- 时间线展示，疾病发展轨迹一目了然
-- 文件预览、下载、批量操作
+### 📁 智能数据管理（患者端）
+- 📤 上传医疗数据（检验报告、影像资料、病历记录等）
+- 🏷️ 自动分类：检验报告、影像资料、病历记录、体检报告、用药记录
+- 🔍 多维度筛选：按类型、授权状态、日期范围搜索
+- 📊 数据统计：总数据条目、授权中数据、本月新增
+- 👁️ 授权状态追踪：查看每条数据的授权请求情况
 
-### 🤝 灵活的数据分享
-- **患者主导**：自主决定分享内容、分享对象、有效期
-- **一键授权**：快速授权医生查看指定文件
-- **权限精细化**：可设置查看、下载等不同权限级别
-- **随时撤销**：支持随时撤回已分享的数据
+### 🤝 灵活的授权管理（患者端）
+- **授权请求管理**：查看医生发起的数据访问授权申请
+- **详细申请信息**：
+  - 医生信息（姓名、医院、科室、职称、认证状态）
+  - 数据信息（名称、类型、上传时间）
+  - 申请理由
+- **审批操作**：
+  - 同意：设置授权有效期（7天/30天/90天），添加备注
+  - 拒绝：说明拒绝理由
+  - 撤销：随时撤销已授予的授权
+- **授权历史**：查看所有授权的完整历史记录
 
-### 📊 透明的访问记录
-- 完整记录每次数据访问的详细信息
-- 包含访问者、时间、访问内容、IP 地址等
-- 实时通知，异常访问立即提醒
-- 可视化统计，数据访问趋势一览无余
+### 📊 透明的访问记录（患者端）
+- 🕒 完整记录每次数据访问的详细信息
+- 👨‍⚕️ 访问者信息：医生姓名、医院、科室
+- 📄 访问内容：文件名称、数据类型、访问类型
+- 📈 访问统计：今日/本周/本月/总访问次数
+- 🎯 多维度统计：按医生、按文件、访问趋势分析
+- 📥 导出功能：支持导出为CSV/Excel格式
 
-### 🏥 医生工作台
-- 患者列表管理，快速查找授权患者
-- 申请数据访问权限，说明访问原因
-- 查看共享文件，高效诊疗决策
-- 访问历史记录，规范医疗行为
+### 🏥 医生数据管理（医生端）
+- **数据中心化视图**：
+  - 按数据为单位展示，不是按患者
+  - 未授权数据：只显示数据基本信息，患者信息显示"🔒 需授权后可见"
+  - 已授权数据：显示完整的数据和患者信息
+- **授权申请**：
+  - 发起授权申请，说明访问原因
+  - 追踪申请状态（待审批/已授权/已拒绝）
+- **数据访问**：
+  - 查看已授权数据的详细内容
+  - 记录每次访问行为
+- **统计面板**：
+  - 数据总数、已授权数据、待授权数据、今日已查看
+
+### 🎨 现代化UI体验
+- 🌈 基于 Element Plus 的精美界面
+- 📱 响应式设计，支持多种设备
+- 🎯 直观的操作流程
+- ⚡ 流畅的交互体验
+- 🎭 演示账户数据与真实账户隔离
 
 ---
 
 ## 🛠 技术栈
 
 ### 前端技术
-- **框架**: Vue 3.5.18（Composition API）
-- **构建工具**: Vite 7.0
-- **开发语言**: TypeScript 5.8
-- **UI 组件库**: Element Plus 2.11
-- **状态管理**: Pinia 3.0
-- **路由管理**: Vue Router 4.5
-- **HTTP 客户端**: Axios 1.12
-- **图标库**: @element-plus/icons-vue
+| 技术 | 版本 | 用途 |
+|------|------|------|
+| **Vue 3** | 3.5.18 | 渐进式JavaScript框架（Composition API） |
+| **TypeScript** | 5.8 | JavaScript超集，类型安全 |
+| **Vite** | 7.0 | 下一代前端构建工具 |
+| **Element Plus** | 2.11 | Vue 3 UI组件库 |
+| **Pinia** | 3.0 | 新一代状态管理 |
+| **Vue Router** | 4.5 | 官方路由管理器 |
+| **Axios** | 1.12 | HTTP客户端 |
+| **@element-plus/icons-vue** | - | Element Plus图标库 |
 
-### 后端技术
+### 后端技术（推荐）
 - **语言**: Go 1.21+
 - **Web 框架**: Gin
 - **ORM**: GORM
+- **数据库**: MySQL 8.0+ / PostgreSQL 14+
 - **认证**: JWT
-- **缓存**: Redis（可选）
-
----
-
-## 📂 项目结构
-
-```
-medical-data-traceability/
-├── vue-project/                 # 前端项目
-│   ├── src/
-│   │   ├── api/                # API 接口模块
-│   │   │   ├── auth.ts        # 认证 API
-│   │   │   ├── medicalData.ts # 医疗数据 API
-│   │   │   ├── share.ts       # 分享 API
-│   │   │   ├── access.ts      # 访问记录 API
-│   │   │   ├── doctor.ts      # 医生端 API
-│   │   │   └── patient.ts     # 患者端 API
-│   │   ├── components/        # 通用组件
-│   │   ├── layouts/           # 布局组件
-│   │   ├── views/             # 页面组件
-│   │   │   ├── patient/       # 患者端页面
-│   │   │   └── doctor/        # 医生端页面
-│   │   ├── router/            # 路由配置
-│   │   ├── stores/            # Pinia 状态管理
-│   │   ├── types/             # TypeScript 类型定义
-│   │   ├── utils/             # 工具函数
-│   │   ├── styles/            # 全局样式
-│   │   └── assets/            # 静态资源
-│   ├── public/                # 公共资源
-│   ├── index.html            # HTML 入口
-│   ├── vite.config.ts        # Vite 配置
-│   ├── tsconfig.json         # TypeScript 配置
-│   └── package.json          # 项目依赖
-├── BACKEND_INTEGRATION_GUIDE.md  # 后端对接指南
-└── README.md                 # 项目说明文档
-```
+- **缓存**: Redis 6+（可选）
 
 ---
 
@@ -128,13 +132,14 @@ medical-data-traceability/
 1. **克隆项目**
 
 ```bash
-git clone https://github.com/your-username/medical-data-traceability.git
-cd medical-data-traceability/vue-project
+git clone https://github.com/cypher3-git/vue-project.git
+cd vue-project
 ```
 
 2. **安装依赖**
 
 ```bash
+cd vue-project
 npm install
 ```
 
@@ -143,9 +148,15 @@ npm install
 创建 `.env.development` 文件：
 
 ```env
+# API基础URL（开发环境）
 VITE_API_BASE_URL=http://localhost:8080/api
+
+# 文件上传配置
 VITE_UPLOAD_MAX_SIZE=104857600
 VITE_UPLOAD_ALLOWED_TYPES=pdf,doc,docx,jpg,jpeg,png,gif
+
+# 是否启用模拟数据（开发环境建议开启）
+VITE_USE_MOCK_DATA=true
 ```
 
 4. **启动开发服务器**
@@ -172,62 +183,131 @@ npm run preview
 
 ---
 
-## 📱 功能演示
+## 🎮 在线演示
 
-### 患者端
+### 演示账户
 
-#### 1. 数据管理
-- 上传医疗报告、影像资料、处方单等
-- 按类别、时间、关键词搜索文件
-- 查看文件详情、预览、下载
-- 批量删除、文件统计分析
+系统提供两个演示账户，可以直接体验完整功能：
 
-#### 2. 数据分享
-- 选择文件和医生，创建分享授权
-- 设置权限（查看、下载）和有效期
-- 查看我的分享列表，管理授权状态
-- 延长分享期限或随时撤销授权
+#### 患者演示账户
+- **手机号**: `13800138000`
+- **验证码**: 任意6位数字（如 `123456`）
+- **功能**:
+  - 查看模拟的医疗数据
+  - 管理授权请求
+  - 查看访问记录
 
-#### 3. 访问记录
-- 查看所有数据访问记录
-- 按医生、文件、时间筛选记录
-- 详细信息包括访问者、时间、内容、IP 等
-- 访问统计可视化展示
+#### 医生演示账户
+- **手机号**: `13900139000`
+- **验证码**: 任意6位数字（如 `123456`）
+- **功能**:
+  - 查看可访问的医疗数据
+  - 发起授权申请
+  - 查看授权状态
 
-#### 4. 工作台
-- 数据概览：文件数、分享数、授权医生数
-- 最近上传、最近分享、最近访问
-- 存储空间使用情况
-- 待处理权限申请
+> **注意**: 
+> - 演示账户使用模拟数据，不会影响真实数据库
+> - 真实注册的账户不会看到模拟数据
+> - 模拟数据配置位于 `src/config/mock.config.ts`
 
-### 医生端
+### 注册新账户
 
-#### 1. 患者管理
-- 查看已授权患者列表
-- 按关键词搜索患者
-- 查看患者详细信息和医疗档案
-- 标记常用患者
+也可以注册真实账户进行测试：
 
-#### 2. 数据访问
-- 查看共享文件列表
-- 按患者、类别、时间筛选
-- 预览、下载患者授权的医疗文件
-- 访问记录自动记录
+1. 点击"立即注册"
+2. 选择角色（患者/医生）
+3. 输入手机号并获取验证码
+4. 填写身份证号（用于实名认证）
+5. 医生需要选择科室
+6. 同意用户协议并完成注册
 
-#### 3. 权限申请
-- 向患者申请数据访问权限
-- 说明申请原因和所需权限
-- 查看申请状态（待处理、已批准、已拒绝）
-- 撤销未处理的申请
+---
 
-#### 4. 工作台
-- 工作概览：患者数、活跃分享数、待处理申请
-- 最近患者、最近分享、最近访问
-- 月度访问趋势统计
+## 📂 项目结构
+
+```
+medical-data-traceability/
+├── vue-project/                    # 前端项目
+│   ├── src/
+│   │   ├── api/                   # API 接口模块（已精简）
+│   │   │   ├── auth.ts           # 认证 API (7个)
+│   │   │   ├── medicalData.ts    # 医疗数据 API (1个)
+│   │   │   ├── doctor.ts         # 医生端 API (3个)
+│   │   │   ├── patient.ts        # 患者端 API (6个)
+│   │   │   ├── access.ts         # 访问记录 API (3个)
+│   │   │   ├── index.ts          # API 统一导出
+│   │   │   └── README.md         # API 文档
+│   │   ├── assets/               # 静态资源
+│   │   │   ├── logo.png         # Logo
+│   │   │   └── background.jpg    # 背景图
+│   │   ├── components/           # 通用组件
+│   │   │   └── forms/           # 表单组件
+│   │   ├── config/               # 配置文件
+│   │   │   └── mock.config.ts   # 模拟数据配置
+│   │   ├── layouts/              # 布局组件
+│   │   │   └── AppLayout.vue    # 主布局
+│   │   ├── mock/                 # 模拟数据
+│   │   │   ├── mockService.ts   # 模拟数据服务
+│   │   │   └── data/            # 模拟数据定义
+│   │   ├── router/               # 路由配置
+│   │   │   └── index.ts         # 路由定义
+│   │   ├── stores/               # Pinia 状态管理
+│   │   │   └── auth.ts          # 认证状态
+│   │   ├── styles/               # 全局样式
+│   │   │   └── main.css         # 主样式文件
+│   │   ├── types/                # TypeScript 类型定义
+│   │   │   ├── auth.ts          # 认证类型
+│   │   │   └── medicalData.ts   # 医疗数据类型
+│   │   ├── utils/                # 工具函数
+│   │   │   └── request.ts       # Axios 封装
+│   │   └── views/                # 页面组件
+│   │       ├── auth/            # 认证页面
+│   │       │   ├── LoginView.vue
+│   │       │   └── RegisterView.vue
+│   │       ├── patient/         # 患者端页面
+│   │       │   ├── DataView.vue           # 我的数据
+│   │       │   ├── AuthorizationView.vue  # 授权管理
+│   │       │   └── AccessView.vue         # 访问记录
+│   │       ├── doctor/          # 医生端页面
+│   │       │   └── DataManagementView.vue # 数据管理
+│   │       ├── common/          # 通用页面
+│   │       │   └── NotFoundView.vue
+│   │       └── share/           # 分享页面（预留）
+│   │           └── ShareView.vue
+│   ├── public/                   # 公共资源
+│   ├── index.html               # HTML 入口
+│   ├── vite.config.ts           # Vite 配置
+│   ├── tsconfig.json            # TypeScript 配置
+│   └── package.json             # 项目依赖
+├── BACKEND_INTEGRATION_GUIDE.md  # 后端对接指南
+├── API_USAGE_ANALYSIS.md         # API使用情况分析
+├── API_CLEANUP_SUMMARY.md        # API清理工作总结
+└── README.md                     # 本文档
+```
+
+### 代码组织说明
+
+- **API模块**: 已从111个API精简到20个核心API（减少82%）
+- **类型定义**: 完整的TypeScript类型支持，确保类型安全
+- **模拟数据**: 演示账户使用独立的模拟数据，不影响真实账户
+- **路由管理**: 按角色（患者/医生）分离路由
+- **状态管理**: 使用Pinia进行轻量级状态管理
 
 ---
 
 ## 📚 API 文档
+
+### API概览
+
+系统共有 **20个核心API**，分布在5个模块：
+
+| 模块 | API数量 | 说明 |
+|------|---------|------|
+| 认证模块 (auth) | 7 | 登录、注册、个人信息管理 |
+| 医疗数据 (medicalData) | 1 | 患者医疗数据查询 |
+| 医生端 (doctor) | 3 | 医生数据管理、统计 |
+| 患者端 (patient) | 6 | 授权管理、文件统计 |
+| 访问记录 (access) | 3 | 访问统计、记录查询 |
 
 ### 认证机制
 
@@ -239,84 +319,289 @@ Authorization: Bearer <JWT_TOKEN>
 
 ### 主要 API 端点
 
-#### 认证相关 `/api/auth`
-- `POST /auth/send-verification-code` - 发送验证码
-- `POST /auth/register` - 用户注册
-- `POST /auth/login` - 用户登录
-- `GET /auth/me` - 获取当前用户信息
-- `PUT /auth/profile` - 更新个人资料
+#### 1. 认证模块 `/api/auth`
 
-#### 医疗数据 `/api/medical-data`
-- `GET /medical-data/files` - 获取文件列表
-- `POST /medical-data/upload` - 上传文件
-- `GET /medical-data/files/:id` - 获取文件详情
-- `PUT /medical-data/files/:id` - 更新文件信息
-- `DELETE /medical-data/files/:id` - 删除文件
-- `GET /medical-data/download/:id` - 下载文件
-- `GET /medical-data/statistics` - 获取数据统计
+```typescript
+// 发送验证码
+POST /auth/send-verification-code
+Body: { type: 'phone', phone: string, purpose: 'register' | 'login' }
 
-#### 数据分享 `/api/shares`
-- `POST /shares` - 创建分享
-- `GET /shares/my-shares` - 获取我的分享
-- `GET /shares/received` - 获取收到的分享
-- `POST /shares/:id/revoke` - 撤销分享
-- `POST /shares/:id/extend` - 延长分享期限
+// 用户注册
+POST /auth/register
+Body: { phone, code, idCard, role, agreeToTerms, department? }
 
-#### 访问记录 `/api/access`
-- `GET /access/my-records` - 获取访问记录
-- `GET /access/file/:fileId` - 获取文件访问记录
-- `GET /access/statistics` - 获取访问统计
+// 用户登录
+POST /auth/login
+Body: { phone, code, role }
 
-#### 医生端 `/api/doctor`
-- `GET /doctor/patients` - 获取患者列表
-- `GET /doctor/patients/:id/files` - 获取患者文件
-- `POST /doctor/permission-requests` - 申请访问权限
-- `GET /doctor/shared-files` - 获取共享文件
-- `GET /doctor/dashboard/statistics` - 获取工作台统计
+// 获取当前用户
+GET /auth/profile
+Headers: { Authorization: 'Bearer <token>' }
 
-#### 患者端 `/api/patient`
-- `GET /patient/dashboard/statistics` - 获取工作台统计
-- `GET /patient/permission-requests` - 获取权限申请
-- `POST /patient/permission-requests/:id/approve` - 批准申请
-- `POST /patient/permission-requests/:id/reject` - 拒绝申请
+// 更新个人信息
+PUT /auth/profile
+Body: { name?, avatar?, ... }
 
-> 详细的 API 文档请查看 [BACKEND_INTEGRATION_GUIDE.md](./BACKEND_INTEGRATION_GUIDE.md)
+// 刷新Token
+POST /auth/refresh-token
+
+// 退出登录
+POST /auth/logout
+```
+
+#### 2. 医疗数据模块 `/api/medical-data`
+
+```typescript
+// 获取医疗文件列表
+GET /medical-data/files
+Query: { page?, pageSize?, category?, keyword?, startDate?, endDate? }
+```
+
+#### 3. 医生端模块 `/api/doctor`
+
+```typescript
+// 获取可访问的医疗数据列表
+GET /doctor/medical-data
+Query: { dataType?, authStatus?, keyword?, dateRange?, page?, pageSize? }
+
+// 获取医生统计数据
+GET /doctor/statistics
+Returns: { totalPatients, activeShares, pendingRequests, todayAccess }
+
+// 获取访问历史
+GET /doctor/access-history
+Query: { patientId?, fileId?, startDate?, endDate?, page?, pageSize? }
+```
+
+#### 4. 患者端模块 `/api/patient`
+
+```typescript
+// 获取文件统计
+GET /patient/statistics/files
+Returns: { totalFiles, authorizedFiles, recentUploads, filesByCategory }
+
+// 获取授权请求列表
+GET /patient/authorization-requests
+Query: { status?, page?, pageSize? }
+
+// 同意授权申请
+POST /patient/authorization-requests/:id/approve
+Body: { expiresIn: number, notes?: string }
+
+// 拒绝授权申请
+POST /patient/authorization-requests/:id/reject
+Body: { reason: string }
+
+// 撤销授权
+POST /patient/authorizations/:id/revoke
+
+// 获取授权历史
+GET /patient/authorization-history
+Query: { dataId?, doctorId?, startDate?, endDate?, page?, pageSize? }
+```
+
+#### 5. 访问记录模块 `/api/access`
+
+```typescript
+// 获取访问统计
+GET /access/statistics
+Query: { startDate?, endDate?, groupBy?: 'day' | 'week' | 'month' }
+
+// 获取访问记录
+GET /access/my-records
+Query: { fileId?, doctorId?, accessType?, startDate?, endDate?, page?, pageSize? }
+
+// 导出访问记录
+GET /access/export
+Query: { fileId?, doctorId?, startDate?, endDate?, format?: 'csv' | 'excel' }
+```
+
+### 统一响应格式
+
+所有API遵循统一的响应格式：
+
+```typescript
+{
+  success: boolean,      // 操作是否成功
+  message: string,       // 响应消息
+  data?: any,           // 响应数据（可选）
+  code?: number,        // 业务状态码（可选）
+  errors?: object       // 错误详情（可选）
+}
+```
+
+> 📖 **详细的 API 文档**: 
+> - [API使用情况分析](./vue-project/src/api/API_USAGE_ANALYSIS.md) - 包含完整的请求/响应示例
+> - [API接口文档](./vue-project/src/api/README.md) - API模块说明
+> - [后端对接指南](./BACKEND_INTEGRATION_GUIDE.md) - 后端实现参考
 
 ---
 
 ## 🔧 后端对接
 
-本项目提供完整的后端对接文档，包括：
+### 核心功能要求
 
-- 数据模型定义（Go Struct）
-- 完整的 API 路由清单
-- 请求/响应示例
-- JWT 认证机制
-- 文件上传下载规范
-- 安全要求和配置
-- 环境配置说明
+后端需要实现以下核心功能：
 
-详见 [后端对接指南](./BACKEND_INTEGRATION_GUIDE.md)
+1. **用户认证**
+   - 手机验证码发送与验证
+   - 用户注册（支持患者和医生）
+   - JWT Token生成与刷新
 
-### 后端快速启动
+2. **授权管理**
+   - 医生发起授权申请
+   - 患者审批（同意/拒绝）
+   - 授权状态管理
+   - 授权撤销
 
-1. 克隆后端项目（假设后端项目地址）
-2. 配置数据库连接
-3. 运行数据库迁移
-4. 启动服务
+3. **数据访问控制**
+   - 未授权数据：隐藏患者信息
+   - 已授权数据：显示完整信息
+   - 访问记录自动记录
 
-```bash
-# 后端项目目录
-cd backend-go-gin
-cp .env.example .env
-# 编辑 .env 配置数据库等信息
+4. **访问追踪**
+   - 记录每次数据访问
+   - 统计访问数据
+   - 支持数据导出
 
-# 运行迁移
-go run migrate.go
+### 数据模型
 
-# 启动服务
-go run main.go
+关键数据模型包括：
+
+```go
+// 用户模型
+type User struct {
+    ID              string
+    Phone           string
+    IDCard          string
+    Name            string
+    Gender          string
+    BirthDate       string
+    Role            UserRole  // patient / doctor
+    Department      string    // 医生科室
+    IsPhoneVerified bool
+    CreatedAt       time.Time
+    UpdatedAt       time.Time
+}
+
+// 医疗文件模型
+type MedicalFile struct {
+    ID          string
+    PatientID   string
+    Name        string
+    Category    string
+    FileSize    string
+    FileUrl     string
+    UploadedAt  time.Time
+}
+
+// 授权请求模型
+type AuthorizationRequest struct {
+    ID            string
+    DataID        string
+    PatientID     string
+    DoctorID      string
+    Reason        string
+    Status        string  // pending / approved / rejected
+    ExpiresAt     time.Time
+    ProcessedAt   time.Time
+    CreatedAt     time.Time
+}
+
+// 访问记录模型
+type AccessRecord struct {
+    ID          string
+    DoctorID    string
+    PatientID   string
+    FileID      string
+    AccessType  string  // view / download / preview
+    AccessedAt  time.Time
+    Duration    int
+    IPAddress   string
+}
 ```
+
+> 📖 **完整的后端对接文档**: [BACKEND_INTEGRATION_GUIDE.md](./BACKEND_INTEGRATION_GUIDE.md)
+
+---
+
+## 📱 功能演示
+
+### 患者端功能
+
+#### 1. 我的数据 (`/patient/data`)
+- ✅ 查看所有上传的医疗数据
+- ✅ 按类型、授权状态、日期筛选
+- ✅ 查看每条数据的授权状态
+- ✅ 数据统计卡片展示
+
+#### 2. 授权管理 (`/patient/authorization`)
+- ✅ 查看医生发起的授权请求
+- ✅ 查看医生详细信息（医院、科室、认证状态）
+- ✅ 同意授权并设置有效期
+- ✅ 拒绝授权并说明理由
+- ✅ 查看授权历史记录
+- ✅ 撤销已授予的授权
+
+#### 3. 访问记录 (`/patient/access`)
+- ✅ 查看所有数据访问记录
+- ✅ 按医生、文件、时间筛选
+- ✅ 访问统计可视化展示
+- ✅ 导出访问记录（CSV/Excel）
+
+### 医生端功能
+
+#### 1. 数据管理 (`/doctor/data`)
+- ✅ 查看所有可访问的患者数据
+- ✅ 未授权数据：只显示数据信息，患者信息显示"🔒 需授权后可见"
+- ✅ 已授权数据：显示完整的数据和患者信息
+- ✅ 按数据类型、授权状态筛选
+- ✅ 发起授权申请
+- ✅ 查看数据详情（需授权）
+- ✅ 统计面板：数据总数、已授权、待授权、今日已查看
+
+---
+
+## 🎨 界面截图
+
+### 登录页面
+- 简洁的登录界面
+- 手机验证码登录
+- 演示账户快速登录
+
+### 患者端
+- **我的数据**: 数据列表、筛选、授权状态
+- **授权管理**: 授权请求列表、审批操作
+- **访问记录**: 访问统计、记录列表、导出功能
+
+### 医生端
+- **数据管理**: 数据列表（授权状态清晰）
+- **授权申请**: 发起申请、查看状态
+- **统计面板**: 关键指标一目了然
+
+---
+
+## 🔒 安全特性
+
+### 数据安全
+- ✅ 所有API请求需要JWT认证
+- ✅ 敏感数据加密传输（HTTPS）
+- ✅ 文件上传安全校验
+- ✅ SQL注入防护
+- ✅ XSS攻击防护
+
+### 隐私保护
+- ✅ 未授权数据不显示患者信息
+- ✅ 授权过期自动失效
+- ✅ 支持随时撤销授权
+- ✅ 完整的访问日志追踪
+- ✅ IP地址脱敏显示
+
+### 权限控制
+- ✅ 基于角色的访问控制（RBAC）
+- ✅ 前端路由守卫
+- ✅ 后端接口权限验证
+- ✅ 操作审计日志
 
 ---
 
@@ -328,7 +613,7 @@ go run main.go
 
 1. Fork 本项目
 2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+3. 提交更改 (`git commit -m 'feat: Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
 5. 提交 Pull Request
 
@@ -341,10 +626,64 @@ go run main.go
   - `docs`: 文档更新
   - `style`: 代码格式调整
   - `refactor`: 代码重构
+  - `perf`: 性能优化
   - `test`: 测试相关
   - `chore`: 构建/工具链相关
-- **类型检查**: 确保 `npm run type-check` 通过
-- **测试**: 为新功能添加测试用例
+- **类型检查**: 确保 TypeScript 类型正确
+- **测试**: 为新功能添加测试用例（推荐）
+
+### 提交信息示例
+
+```bash
+feat: 添加授权管理功能
+fix: 修复登录验证码发送失败的问题
+docs: 更新API文档
+refactor: 重构数据管理页面组件
+chore: 更新依赖包版本
+```
+
+---
+
+## 📋 开发路线图
+
+### v1.0 ✅ （已完成）
+- [x] 用户认证系统
+- [x] 患者数据管理
+- [x] 授权管理系统
+- [x] 访问记录追踪
+- [x] 医生数据访问
+- [x] 模拟数据支持
+
+### v1.1 🚧 （开发中）
+- [ ] 文件上传功能
+- [ ] 数据预览功能
+- [ ] 批量操作支持
+- [ ] 通知系统
+
+### v2.0 📅 （计划中）
+- [ ] 数据加密存储
+- [ ] 区块链数据溯源
+- [ ] 多端同步（移动端）
+- [ ] 智能推荐系统
+
+---
+
+## 🐛 问题反馈
+
+如果你在使用过程中遇到问题，可以通过以下方式反馈：
+
+1. **GitHub Issues**: [提交Issue](https://github.com/cypher3-git/vue-project/issues)
+2. **邮件**: 发送邮件描述问题
+3. **Pull Request**: 直接提交代码修复
+
+### 提交Issue时请包含
+
+- 问题描述
+- 复现步骤
+- 预期行为
+- 实际行为
+- 截图（如有）
+- 环境信息（浏览器版本、Node版本等）
 
 ---
 
@@ -352,16 +691,37 @@ go run main.go
 
 本项目采用 [MIT](LICENSE) 许可证。
 
-
+---
 
 ## 🙏 致谢
 
 感谢所有为本项目做出贡献的开发者！
 
+### 核心技术
+
 - [Vue.js](https://vuejs.org/) - 渐进式 JavaScript 框架
 - [Element Plus](https://element-plus.org/) - Vue 3 组件库
 - [Vite](https://vitejs.dev/) - 下一代前端构建工具
 - [TypeScript](https://www.typescriptlang.org/) - JavaScript 的超集
+- [Pinia](https://pinia.vuejs.org/) - Vue 3 状态管理
+- [Axios](https://axios-http.com/) - HTTP 客户端
+
+### 开发工具
+
+- [VSCode](https://code.visualstudio.com/) - 代码编辑器
+- [Vue DevTools](https://devtools.vuejs.org/) - Vue调试工具
+- [ESLint](https://eslint.org/) - 代码检查
+- [Prettier](https://prettier.io/) - 代码格式化
+
+---
+
+## 📈 项目统计
+
+- **代码行数**: ~15,000+
+- **组件数量**: 20+
+- **API接口**: 20个（已优化）
+- **开发周期**: 2个月
+- **最后更新**: 2025-10-12
 
 ---
 
@@ -370,5 +730,13 @@ go run main.go
 **医联可信·数据溯源系统** - 让医疗数据管理更安全、更透明、更高效
 
 ⭐ 如果这个项目对你有帮助，请给它一个 Star！
+
+[GitHub](https://github.com/cypher3-git/vue-project) • 
+[报告问题](https://github.com/cypher3-git/vue-project/issues) • 
+[贡献代码](https://github.com/cypher3-git/vue-project/pulls)
+
+---
+
+Made with ❤️ by 医联可信团队
 
 </div>
