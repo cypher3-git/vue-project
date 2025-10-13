@@ -78,6 +78,15 @@
         立即登录
       </el-button>
 
+      <!-- 演示账户（仅开发环境） -->
+      <div v-if="showDemoAccounts" class="demo-section">
+        <el-divider>演示账户</el-divider>
+        <div class="demo-buttons">
+          <el-button size="small" @click="fillDemoAccount('patient')">患者演示</el-button>
+          <el-button size="small" @click="fillDemoAccount('doctor')">医生演示</el-button>
+        </div>
+      </div>
+
       <!-- 注册链接 -->
       <div class="other-actions">
         <span class="tip-text">还没有账号？</span>
@@ -110,6 +119,8 @@ const route = useRoute()
 // 表单引用
 const loginFormRef = ref<FormInstance>()
 
+// 是否显示演示账户（仅开发环境）
+const showDemoAccounts = computed(() => import.meta.env.DEV)
 
 // 登录表单数据
 const loginForm = reactive<LoginCredentials>({
@@ -234,6 +245,51 @@ const getDefaultRedirectPath = (): string => {
   return loginForm.role === 'patient' ? '/patient/data' : '/doctor/data'
 }
 
+// 填充演示账户（仅开发环境）
+const fillDemoAccount = async (role: UserRole) => {
+  if (!import.meta.env.DEV) return
+  
+  try {
+    // 模拟登录（避免调用真实API）
+    const mockToken = `demo_token_${role}_${Date.now()}`
+    const mockUser = role === 'patient' ? {
+      id: 'demo_patient_001',
+      name: '演示患者',
+      role: 'patient' as const,
+      phone: '13800138000',
+      createdAt: new Date().toISOString(),
+      idCard: '110101199001011234',
+      currentDepartment: '呼吸内科',
+      departments: [
+        { id: 'dept_001', department: '呼吸内科' },
+        { id: 'dept_002', department: '心血管科' }
+      ]
+    } : {
+      id: 'demo_doctor_001',
+      name: '演示医生',
+      role: 'doctor' as const,
+      phone: '13900139000',
+      createdAt: new Date().toISOString(),
+      idCard: '110101198505055678',
+      department: '心血管科',
+      hospital: '演示医院'
+    }
+    
+    // 直接设置store状态
+    authStore.user = mockUser
+    authStore.token = mockToken
+    localStorage.setItem('token', mockToken)
+    
+    // 登录成功，跳转到对应的页面
+    const redirectPath = role === 'patient' ? '/patient/data' : '/doctor/data'
+    ElMessage.success(`${role === 'patient' ? '患者' : '医生'}演示登录成功！`)
+    router.push(redirectPath)
+    
+  } catch (error: any) {
+    console.error('演示登录失败:', error)
+    ElMessage.error('演示登录失败')
+  }
+}
 
 // 组件卸载时清理定时器
 onBeforeUnmount(() => {
@@ -345,6 +401,32 @@ onBeforeUnmount(() => {
   height: 44px;
   font-size: 16px;
   margin-bottom: 24px;
+}
+
+/* 演示账户区域 */
+.demo-section {
+  margin-bottom: 24px;
+}
+
+.demo-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.demo-buttons .el-button {
+  flex: 1;
+  font-size: 13px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #6c757d;
+  transition: all 0.2s;
+}
+
+.demo-buttons .el-button:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
+  color: #495057;
 }
 
 /* 其他操作 */

@@ -325,74 +325,29 @@ const dataList = ref<any[]>([])
 const loadDataList = async () => {
   loading.value = true
   try {
-    // TODO: 调用 API 获取数据列表
-    // const response = await doctorApi.getMedicalDataList({...})
+    // 调用真实API获取医生可访问的医疗数据列表
+    const { doctorApi } = await import('@/api')
+    const response = await doctorApi.getMedicalDataList({
+      category: filters.value.dataType as any,
+      authStatus: filters.value.authStatus as any,
+      keyword: filters.value.keyword,
+      page: pagination.value.current,
+      pageSize: pagination.value.size
+    })
     
-    // 暂时使用模拟数据
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    dataList.value = [
-      {
-        id: '1',
-        dataName: '血常规检查报告',
-        dataType: 'lab-report' as FileCategory,
-        patientId: 'P001',
-        patientName: '李阿姨',
-        uploadDate: '2024-01-15',
-        fileSize: '2.5 MB',
-        authStatus: 'not-requested',
-        description: '血常规检查结果：白细胞计数正常，红细胞计数正常...'
-      },
-      {
-        id: '2',
-        dataName: '胸部X光片',
-        dataType: 'medical-image' as FileCategory,
-        patientId: 'P001',
-        patientName: '李阿姨',
-        uploadDate: '2024-01-14',
-        fileSize: '5.8 MB',
-        authStatus: 'pending',
-        description: '胸部X光检查：肺部纹理清晰...'
-      },
-      {
-        id: '3',
-        dataName: '心电图检查',
-        dataType: 'lab-report' as FileCategory,
-        patientId: 'P002',
-        patientName: '王大爷',
-        uploadDate: '2024-01-13',
-        fileSize: '1.2 MB',
-        authStatus: 'authorized',
-        description: '心电图检查：窦性心律，心率75次/分...'
-      },
-      {
-        id: '4',
-        dataName: '门诊病历',
-        dataType: 'other' as FileCategory,
-        patientId: 'P002',
-        patientName: '王大爷',
-        uploadDate: '2024-01-12',
-        fileSize: '0.8 MB',
-        authStatus: 'rejected',
-        description: '主诉：胸闷气短1周...'
-      },
-      {
-        id: '5',
-        dataName: '年度体检报告',
-        dataType: 'physical-exam' as FileCategory,
-        patientId: 'P003',
-        patientName: '张女士',
-        uploadDate: '2024-01-10',
-        fileSize: '3.5 MB',
-        authStatus: 'authorized',
-        description: '体检结果：身高165cm，体重60kg，BMI正常...'
-      }
-    ]
-    
-    pagination.value.total = dataList.value.length
+    if (response.success && response.data) {
+      dataList.value = response.data.items || []
+      pagination.value.total = response.data.total || 0
+    } else {
+      dataList.value = []
+      pagination.value.total = 0
+      ElMessage.warning(response.message || '暂无可访问的医疗数据')
+    }
   } catch (error) {
     console.error('加载数据列表失败:', error)
-    ElMessage.error('加载数据列表失败')
+    dataList.value = []
+    pagination.value.total = 0
+    ElMessage.error('加载数据列表失败，请检查网络连接')
   } finally {
     loading.value = false
   }
@@ -458,34 +413,34 @@ const requestAuthorization = (data: any) => {
 
 // 提交授权申请
 const submitAuthRequest = async () => {
-  if (!authFormRef.value) return
+  if (!authFormRef.value || !selectedData.value) return
   
   try {
     await authFormRef.value.validate()
     
     submitting.value = true
     
-    // TODO: 调用 API 提交授权申请
-    // await doctorApi.requestDataAuthorization({...})
-    
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    ElMessage.success('授权申请已提交，请等待患者审批')
-    authDialogVisible.value = false
-    
-    // 更新数据状态
-    if (selectedData.value) {
-      const index = dataList.value.findIndex(d => d.id === selectedData.value.id)
-      if (index !== -1) {
-        dataList.value[index].authStatus = 'pending'
-      }
+    // TODO: 实现授权申请API
+    // 暂时模拟成功响应，待后端API开发完成后替换
+    await new Promise(resolve => setTimeout(resolve, 800))
+    const response = {
+      success: true,
+      message: '授权申请已提交'
     }
     
-    await loadDataList()
+    if (response.success) {
+      ElMessage.success('授权申请已提交，请等待患者审批')
+      authDialogVisible.value = false
+      
+      // 重新加载数据列表以获取最新状态
+      await loadDataList()
+    } else {
+      ElMessage.error(response.message || '提交授权申请失败')
+    }
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('提交授权申请失败:', error)
-      ElMessage.error('提交授权申请失败')
+      ElMessage.error('提交授权申请失败，请检查网络连接')
     }
   } finally {
     submitting.value = false
@@ -610,9 +565,23 @@ const handleRevealPatient = async () => {
 }
 
 // 下载数据
-const downloadData = () => {
-  ElMessage.success('正在下载数据...')
-  viewDialogVisible.value = false
+const downloadData = async () => {
+  if (!selectedData.value) return
+  
+  if (selectedData.value.authStatus !== 'authorized') {
+    ElMessage.warning('该数据尚未授权，无法下载')
+    return
+  }
+  
+  try {
+    // TODO: 实现数据下载API
+    // 暂时提示功能开发中，待后端API开发完成后替换
+    ElMessage.success('数据下载功能开发中，敬请期待')
+    viewDialogVisible.value = false
+  } catch (error: any) {
+    console.error('数据下载失败:', error)
+    ElMessage.error('数据下载失败，请检查网络连接')
+  }
 }
 
 // 刷新数据

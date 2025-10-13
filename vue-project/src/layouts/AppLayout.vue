@@ -7,13 +7,33 @@
       <div class="header-right">
         <!-- 患者科室切换按钮 -->
         <div v-if="userStore.isPatient" class="department-switch">
+          <!-- 当前科室状态标签 -->
+          <el-tag 
+            v-if="userStore.currentDepartment" 
+            type="info" 
+            size="default"
+            effect="light"
+            class="current-department-tag"
+          >
+            当前科室: {{ userStore.currentDepartment }}
+          </el-tag>
+          <el-tag 
+            v-else 
+            type="warning" 
+            size="default"
+            effect="light"
+            class="current-department-tag"
+          >
+            未选择科室
+          </el-tag>
+          
           <el-button 
             type="primary" 
             size="default"
             @click="showDepartmentDialog = true"
             :icon="OfficeBuilding"
           >
-            {{ userStore.currentDepartment || '选择科室' }}
+            {{ userStore.currentDepartment ? '切换科室' : '选择科室' }}
           </el-button>
         </div>
         
@@ -246,7 +266,32 @@ const handleRegisterDepartment = async (departmentName: string) => {
 }
 
 .department-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-right: 8px;
+  height: 32px; /* 确保容器高度一致 */
+}
+
+.current-department-tag {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  font-weight: 500;
+  font-size: 13px;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+}
+
+.current-department-tag.el-tag--warning {
+  background: rgba(255, 193, 7, 0.15) !important;
+  border-color: rgba(255, 193, 7, 0.4) !important;
+  color: #fff3cd !important;
 }
 
 .department-switch .el-button {
@@ -255,6 +300,9 @@ const handleRegisterDepartment = async (departmentName: string) => {
   color: #ffffff;
   font-weight: 500;
   transition: all 0.3s;
+  white-space: nowrap;
+  height: 32px;
+  padding: 0 15px;
 }
 
 .department-switch .el-button:hover {
