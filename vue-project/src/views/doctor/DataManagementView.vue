@@ -21,12 +21,12 @@
             clearable 
             style="width: 150px; margin-right: 16px;"
           >
-            <el-option label="全部类型" value="" />
-            <el-option label="检验报告" value="检验报告" />
-            <el-option label="影像资料" value="影像资料" />
-            <el-option label="病历记录" value="病历记录" />
-            <el-option label="体检报告" value="体检报告" />
-            <el-option label="用药记录" value="用药记录" />
+            <el-option
+              v-for="option in MEDICAL_DATA_TYPE_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
           
           <el-select 
@@ -78,16 +78,15 @@
           <template #default="scope">
             <div class="data-info">
               <el-icon class="data-icon" :size="24">
-                <Document v-if="scope.row.dataType === '检验报告'" />
-                <Picture v-else-if="scope.row.dataType === '影像资料'" />
-                <Folder v-else-if="scope.row.dataType === '病历记录'" />
-                <Files v-else-if="scope.row.dataType === '体检报告'" />
-                <Files v-else-if="scope.row.dataType === '用药记录'" />
+                <Document v-if="scope.row.dataType === 'lab-report'" />
+                <Picture v-else-if="scope.row.dataType === 'medical-image'" />
+                <Files v-else-if="scope.row.dataType === 'physical-exam'" />
+                <Files v-else-if="scope.row.dataType === 'medication'" />
                 <Document v-else />
               </el-icon>
               <div class="data-details">
                 <div class="data-name">{{ scope.row.dataName }}</div>
-                <div class="data-type">{{ scope.row.dataType }}</div>
+                <div class="data-type">{{ MEDICAL_DATA_TYPE_MAP[scope.row.dataType as FileCategory] || scope.row.dataType }}</div>
               </div>
             </div>
           </template>
@@ -207,15 +206,6 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="数据名称">{{ selectedData.dataName }}</el-descriptions-item>
           <el-descriptions-item label="数据类型">{{ selectedData.dataType }}</el-descriptions-item>
-          <el-descriptions-item label="所属患者">
-            <span v-if="selectedData.authStatus === 'authorized'">
-              {{ selectedData.patientName }} ({{ selectedData.patientId }})
-            </span>
-            <span v-else style="color: #999;">
-              <el-icon style="margin-right: 4px;"><Lock /></el-icon>
-              需授权后可见
-            </span>
-          </el-descriptions-item>
           <el-descriptions-item label="上传日期">{{ selectedData.uploadDate }}</el-descriptions-item>
           <el-descriptions-item label="文件大小">{{ selectedData.fileSize }}</el-descriptions-item>
           <el-descriptions-item label="授权状态">
@@ -231,11 +221,47 @@
           <p v-if="selectedData.description">{{ selectedData.description }}</p>
           <el-empty v-else description="暂无数据内容预览" />
         </div>
+
+        <!-- 患者身份溯源结果展示 -->
+        <div v-if="tracedPatientInfo" class="traced-patient-info">
+          <el-divider>患者身份信息</el-divider>
+          <el-alert
+            title="患者身份溯源成功"
+            type="success"
+            :closable="false"
+            style="margin-bottom: 16px;"
+          >
+            <template #default>
+              溯源时间：{{ tracedPatientInfo.traceTime }}
+            </template>
+          </el-alert>
+          <el-descriptions :column="2" border class="patient-descriptions">
+            <el-descriptions-item label="患者姓名">{{ tracedPatientInfo.patient.name }}</el-descriptions-item>
+            <el-descriptions-item label="患者ID">{{ tracedPatientInfo.patient.id }}</el-descriptions-item>
+            <el-descriptions-item label="性别">{{ tracedPatientInfo.patient.gender }}</el-descriptions-item>
+            <el-descriptions-item label="年龄">{{ tracedPatientInfo.patient.age }} 岁</el-descriptions-item>
+            <el-descriptions-item label="联系电话" v-if="tracedPatientInfo.patient.phone">
+              {{ tracedPatientInfo.patient.phone }}
+            </el-descriptions-item>
+            <el-descriptions-item label="身份证号" v-if="tracedPatientInfo.patient.idCard">
+              {{ tracedPatientInfo.patient.idCard }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
       </div>
       
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="viewDialogVisible = false">关闭</el-button>
+          <el-button 
+            v-if="!tracedPatientInfo && selectedData?.authStatus === 'authorized'"
+            type="warning" 
+            :loading="isTracing"
+            @click="handleTracePatient"
+          >
+            <el-icon style="margin-right: 4px;"><UserFilled /></el-icon>
+            患者身份溯源
+          </el-button>
           <el-button type="primary" @click="downloadData">下载数据</el-button>
         </div>
       </template>
@@ -245,9 +271,16 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Refresh, Search, Document, Picture, Folder, Files, Plus, Lock } from '@element-plus/icons-vue'
+import { Refresh, Search, Document, Picture, Folder, Files, Plus, Lock, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { tracePatientIdentity } from '@/api/doctor'
+import type { DoctorTracePatientResponse } from '@/types/medicalData'
+import { 
+  MEDICAL_DATA_TYPE_OPTIONS,
+  MEDICAL_DATA_TYPE_MAP,
+  type FileCategory 
+} from '@/types/medicalData'
 
 // 响应式数据
 const loading = ref(false)
@@ -255,6 +288,8 @@ const authDialogVisible = ref(false)
 const viewDialogVisible = ref(false)
 const selectedData = ref<any>(null)
 const submitting = ref(false)
+const isTracing = ref(false)
+const tracedPatientInfo = ref<DoctorTracePatientResponse | null>(null)
 
 // 筛选条件
 const filters = ref({
@@ -305,7 +340,7 @@ const loadDataList = async () => {
       {
         id: '1',
         dataName: '血常规检查报告',
-        dataType: '检验报告',
+        dataType: 'lab-report' as FileCategory,
         patientId: 'P001',
         patientName: '李阿姨',
         uploadDate: '2024-01-15',
@@ -316,7 +351,7 @@ const loadDataList = async () => {
       {
         id: '2',
         dataName: '胸部X光片',
-        dataType: '影像资料',
+        dataType: 'medical-image' as FileCategory,
         patientId: 'P001',
         patientName: '李阿姨',
         uploadDate: '2024-01-14',
@@ -327,7 +362,7 @@ const loadDataList = async () => {
       {
         id: '3',
         dataName: '心电图检查',
-        dataType: '检验报告',
+        dataType: 'lab-report' as FileCategory,
         patientId: 'P002',
         patientName: '王大爷',
         uploadDate: '2024-01-13',
@@ -338,7 +373,7 @@ const loadDataList = async () => {
       {
         id: '4',
         dataName: '门诊病历',
-        dataType: '病历记录',
+        dataType: 'other' as FileCategory,
         patientId: 'P002',
         patientName: '王大爷',
         uploadDate: '2024-01-12',
@@ -349,7 +384,7 @@ const loadDataList = async () => {
       {
         id: '5',
         dataName: '年度体检报告',
-        dataType: '体检报告',
+        dataType: 'physical-exam' as FileCategory,
         patientId: 'P003',
         patientName: '张女士',
         uploadDate: '2024-01-10',
@@ -470,7 +505,30 @@ const viewData = (data: any) => {
   }
   
   selectedData.value = data
+  tracedPatientInfo.value = null  // 重置溯源信息
   viewDialogVisible.value = true
+}
+
+// 患者身份溯源
+const handleTracePatient = async () => {
+  if (!selectedData.value) return
+  
+  isTracing.value = true
+  try {
+    const response = await tracePatientIdentity(selectedData.value.id)
+    
+    if (response.success && response.data) {
+      tracedPatientInfo.value = response.data
+      ElMessage.success('患者身份溯源成功')
+    } else {
+      ElMessage.error(response.message || '患者身份溯源失败')
+    }
+  } catch (error: any) {
+    console.error('患者身份溯源失败:', error)
+    ElMessage.error(error.message || '患者身份溯源失败，请稍后重试')
+  } finally {
+    isTracing.value = false
+  }
 }
 
 // 下载数据
@@ -640,6 +698,36 @@ onMounted(async () => {
 
 .dialog-footer {
   text-align: right;
+}
+
+/* 患者身份溯源结果展示 */
+.traced-patient-info {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f9ff 0%, #f0f7ff 100%);
+  border-radius: 12px;
+  border: 1px solid #d0e6ff;
+}
+
+.traced-patient-info .el-divider {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.traced-patient-info .patient-descriptions {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+}
+
+.traced-patient-info .el-descriptions :deep(.el-descriptions__label) {
+  font-weight: 600;
+  color: #409eff;
+}
+
+.traced-patient-info .el-descriptions :deep(.el-descriptions__content) {
+  color: #2c3e50;
+  font-weight: 500;
 }
 
 /* 响应式设计 */

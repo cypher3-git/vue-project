@@ -46,8 +46,13 @@
 - ✅ 演示账户支持，方便功能预览
 
 ### 📁 智能数据管理（患者端）
-- 📤 上传医疗数据（检验报告、影像资料、病历记录等）
-- 🏷️ 自动分类：检验报告、影像资料、病历记录、体检报告、用药记录
+- 📤 上传医疗数据（检验报告、影像资料、用药记录等）
+- 🏷️ 自动分类：**5种医疗数据类型**
+  - 检验报告 (lab-report)
+  - 影像资料 (medical-image)
+  - 用药记录 (medication)
+  - 体检报告 (physical-exam)
+  - 其他类型 (other)
 - 🔍 多维度筛选：按类型、授权状态、日期范围搜索
 - 📊 数据统计：总数据条目、授权中数据、本月新增
 - 👁️ 授权状态追踪：查看每条数据的授权请求情况
@@ -55,13 +60,17 @@
 ### 🤝 灵活的授权管理（患者端）
 - **授权请求管理**：查看医生发起的数据访问授权申请
 - **详细申请信息**：
-  - 医生信息（姓名、医院、科室、职称、认证状态）
+  - ⚠️ 医生信息默认隐藏，保护患者隐私
   - 数据信息（名称、类型、上传时间）
   - 申请理由
 - **审批操作**：
   - 同意：设置授权有效期（7天/30天/90天），添加备注
   - 拒绝：说明拒绝理由
   - 撤销：随时撤销已授予的授权
+- **🔍 身份溯源**：点击查看医生完整信息
+  - 医生详细信息（姓名、医院、科室、职称、认证状态）
+  - 该医生对此数据的访问记录
+  - 总访问次数和最后访问时间
 - **授权历史**：查看所有授权的完整历史记录
 
 ### 📊 透明的访问记录（患者端）
@@ -83,8 +92,25 @@
 - **数据访问**：
   - 查看已授权数据的详细内容
   - 记录每次访问行为
+- **🔍 患者身份溯源**（新功能）：
+  - 对已授权数据进行患者身份信息溯源
+  - 查看患者详细信息（脱敏处理）
+  - 追踪数据来源和关联信息
 - **统计面板**：
   - 数据总数、已授权数据、待授权数据、今日已查看
+
+### 🏢 科室管理（患者端）
+- **多科室支持**：患者可注册多个科室
+- **科室切换**：在主页顶部快速切换当前科室
+- **智能管理**：
+  - 查看已注册科室列表
+  - 注册新科室（**12个科室可选**）
+  - 切换时仅显示已注册科室
+  - 切换到未注册科室需先注册
+- **支持科室**：
+  - 心血管科、内科、骨科、神经科
+  - 外科、呼吸内科、消化内科、泌尿科
+  - 妇产科、儿科、内分泌科、肿瘤科
 
 ### 🎨 现代化UI体验
 - 🌈 基于 Element Plus 的精美界面
@@ -92,6 +118,7 @@
 - 🎯 直观的操作流程
 - ⚡ 流畅的交互体验
 - 🎭 演示账户数据与真实账户隔离
+- 🔄 统一的枚举类型管理（科室、数据类型）
 
 ---
 
@@ -218,7 +245,9 @@ npm run preview
 2. 选择角色（患者/医生）
 3. 输入手机号并获取验证码
 4. 填写身份证号（用于实名认证）
-5. 医生需要选择科室
+5. **选择科室**（必填）
+   - 患者：选择初始就诊科室，登录后可切换或注册新科室
+   - 医生：选择工作科室（固定）
 6. 同意用户协议并完成注册
 
 ---
@@ -232,8 +261,8 @@ medical-data-traceability/
 │   │   ├── api/                   # API 接口模块（已精简）
 │   │   │   ├── auth.ts           # 认证 API (7个)
 │   │   │   ├── medicalData.ts    # 医疗数据 API (1个)
-│   │   │   ├── doctor.ts         # 医生端 API (3个)
-│   │   │   ├── patient.ts        # 患者端 API (6个)
+│   │   │   ├── doctor.ts         # 医生端 API (4个)
+│   │   │   ├── patient.ts        # 患者端 API (10个)
 │   │   │   ├── access.ts         # 访问记录 API (3个)
 │   │   │   ├── index.ts          # API 统一导出
 │   │   │   └── README.md         # API 文档
@@ -241,23 +270,25 @@ medical-data-traceability/
 │   │   │   ├── logo.png         # Logo
 │   │   │   └── background.jpg    # 背景图
 │   │   ├── components/           # 通用组件
-│   │   │   └── forms/           # 表单组件
+│   │   │   ├── forms/           # 表单组件
+│   │   │   └── DepartmentDialog.vue  # 科室管理弹窗
 │   │   ├── config/               # 配置文件
 │   │   │   └── mock.config.ts   # 模拟数据配置
 │   │   ├── layouts/              # 布局组件
-│   │   │   └── AppLayout.vue    # 主布局
+│   │   │   └── AppLayout.vue    # 主布局（含科室切换）
 │   │   ├── mock/                 # 模拟数据
 │   │   │   ├── mockService.ts   # 模拟数据服务
 │   │   │   └── data/            # 模拟数据定义
 │   │   ├── router/               # 路由配置
 │   │   │   └── index.ts         # 路由定义
 │   │   ├── stores/               # Pinia 状态管理
-│   │   │   └── auth.ts          # 认证状态
+│   │   │   ├── auth.ts          # 认证状态（含科室管理）
+│   │   │   └── medicalData.ts   # 医疗数据状态
 │   │   ├── styles/               # 全局样式
 │   │   │   └── main.css         # 主样式文件
 │   │   ├── types/                # TypeScript 类型定义
-│   │   │   ├── auth.ts          # 认证类型
-│   │   │   └── medicalData.ts   # 医疗数据类型
+│   │   │   ├── auth.ts          # 认证类型（含科室枚举）
+│   │   │   └── medicalData.ts   # 医疗数据类型（含数据类型枚举）
 │   │   ├── utils/                # 工具函数
 │   │   │   └── request.ts       # Axios 封装
 │   │   └── views/                # 页面组件
@@ -266,10 +297,9 @@ medical-data-traceability/
 │   │       │   └── RegisterView.vue
 │   │       ├── patient/         # 患者端页面
 │   │       │   ├── DataView.vue           # 我的数据
-│   │       │   ├── AuthorizationView.vue  # 授权管理
-│   │       │   └── AccessView.vue         # 访问记录
+│   │       │   └── AuthorizationView.vue  # 授权管理（含身份溯源）
 │   │       ├── doctor/          # 医生端页面
-│   │       │   └── DataManagementView.vue # 数据管理
+│   │       │   └── DataManagementView.vue # 数据管理（含患者溯源）
 │   │       ├── common/          # 通用页面
 │   │       │   └── NotFoundView.vue
 │   │       └── share/           # 分享页面（预留）
@@ -279,19 +309,37 @@ medical-data-traceability/
 │   ├── vite.config.ts           # Vite 配置
 │   ├── tsconfig.json            # TypeScript 配置
 │   └── package.json             # 项目依赖
-├── BACKEND_INTEGRATION_GUIDE.md  # 后端对接指南
-├── API_USAGE_ANALYSIS.md         # API使用情况分析
-├── API_CLEANUP_SUMMARY.md        # API清理工作总结
-└── README.md                     # 本文档
+├── BACKEND_INTEGRATION_GUIDE.md     # 后端对接指南
+└── README.md                        # 本文档
 ```
 
 ### 代码组织说明
 
-- **API模块**: 已从111个API精简到20个核心API（减少82%）
+- **API模块**: 已从111个API精简到25个核心API（减少77%）
 - **类型定义**: 完整的TypeScript类型支持，确保类型安全
+  - **科室枚举**: 12个科室统一管理 (`types/auth.ts`)
+  - **数据类型枚举**: 5种医疗数据类型统一管理 (`types/medicalData.ts`)
+  - **接口优化**: 基础接口与角色接口职责分离，消除冗余字段
 - **模拟数据**: 演示账户使用独立的模拟数据，不影响真实账户
 - **路由管理**: 按角色（患者/医生）分离路由
-- **状态管理**: 使用Pinia进行轻量级状态管理
+- **状态管理**: 使用Pinia进行轻量级状态管理，支持类型守卫
+- **组件化**: 科室管理、身份溯源等功能模块化
+
+### 接口设计亮点
+
+**科室字段设计** (v1.1.1 优化)：
+- **基础 User 接口**：仅包含所有用户共有的字段（id、name、phone、role、createdAt）
+- **患者端 (PatientUser)**：
+  - `currentDepartment`: 当前选择的科室（可切换）
+  - `departments`: 已注册的科室列表（PatientDepartment[]）
+- **医生端 (DoctorUser)**：
+  - `department`: 所属科室（注册时绑定，固定不变）
+
+这种设计遵循"单一职责原则"和"接口隔离原则"，使得：
+- ✅ 基础接口不包含角色特定字段
+- ✅ 医生和患者的科室管理逻辑清晰分离
+- ✅ 避免了字段冗余和语义混淆
+- ✅ 类型更加安全和明确
 
 ---
 
@@ -299,14 +347,14 @@ medical-data-traceability/
 
 ### API概览
 
-系统共有 **20个核心API**，分布在5个模块：
+系统共有 **25个核心API**，分布在5个模块：
 
 | 模块 | API数量 | 说明 |
 |------|---------|------|
 | 认证模块 (auth) | 7 | 登录、注册、个人信息管理 |
 | 医疗数据 (medicalData) | 1 | 患者医疗数据查询 |
-| 医生端 (doctor) | 3 | 医生数据管理、统计 |
-| 患者端 (patient) | 6 | 授权管理、文件统计 |
+| 医生端 (doctor) | 4 | 医生数据管理、统计、患者身份溯源 |
+| 患者端 (patient) | 10 | 授权管理、科室管理、身份溯源 |
 | 访问记录 (access) | 3 | 访问统计、记录查询 |
 
 ### 认证机制
@@ -371,15 +419,17 @@ Returns: { totalPatients, activeShares, pendingRequests, todayAccess }
 // 获取访问历史
 GET /doctor/access-history
 Query: { patientId?, fileId?, startDate?, endDate?, page?, pageSize? }
+
+// 患者身份溯源（新增）
+POST /doctor/trace-patient-identity
+Body: { dataId: string }
+Returns: { patient, dataInfo, traceTime }
 ```
 
 #### 4. 患者端模块 `/api/patient`
 
 ```typescript
-// 获取文件统计
-GET /patient/statistics/files
-Returns: { totalFiles, authorizedFiles, recentUploads, filesByCategory }
-
+// ========== 授权管理 ==========
 // 获取授权请求列表
 GET /patient/authorization-requests
 Query: { status?, page?, pageSize? }
@@ -395,9 +445,34 @@ Body: { reason: string }
 // 撤销授权
 POST /patient/authorizations/:id/revoke
 
+// ========== 统计与溯源 ==========
+// 获取文件统计
+GET /patient/statistics/files
+Returns: { totalFiles, authorizedFiles, recentUploads, filesByCategory }
+
 // 获取授权历史
 GET /patient/authorization-history
 Query: { dataId?, doctorId?, startDate?, endDate?, page?, pageSize? }
+
+// 医生身份溯源（新增）
+POST /patient/authorization-requests/trace-identity
+Body: { requestId: string }
+Returns: { doctor, accessRecords, totalAccess, lastAccessTime }
+
+// ========== 科室管理（新增） ==========
+// 获取患者已注册科室列表
+GET /patient/departments
+Returns: [{ id, department }]
+
+// 注册新科室
+POST /patient/departments
+Body: { department: string }
+Returns: { id, department }
+
+// 切换当前科室
+POST /patient/departments/switch
+Body: { departmentId: string }
+Returns: { currentDepartment: string }
 ```
 
 #### 5. 访问记录模块 `/api/access`
@@ -430,10 +505,11 @@ Query: { fileId?, doctorId?, startDate?, endDate?, format?: 'csv' | 'excel' }
 }
 ```
 
-> 📖 **详细的 API 文档**: 
+> 📖 **详细的文档**: 
 > - [API使用情况分析](./vue-project/src/api/API_USAGE_ANALYSIS.md) - 包含完整的请求/响应示例
 > - [API接口文档](./vue-project/src/api/README.md) - API模块说明
 > - [后端对接指南](./BACKEND_INTEGRATION_GUIDE.md) - 后端实现参考
+> - [接口优化总结](./INTERFACE_OPTIMIZATION_SUMMARY.md) - 接口设计优化说明
 
 ---
 
@@ -469,19 +545,39 @@ Query: { fileId?, doctorId?, startDate?, endDate?, format?: 'csv' | 'excel' }
 关键数据模型包括：
 
 ```go
-// 用户模型
+// 基础用户模型（所有用户共有的字段）
 type User struct {
-    ID              string
-    Phone           string
-    IDCard          string
-    Name            string
-    Gender          string
-    BirthDate       string
-    Role            UserRole  // patient / doctor
-    Department      string    // 医生科室
-    IsPhoneVerified bool
-    CreatedAt       time.Time
-    UpdatedAt       time.Time
+    ID          string
+    Phone       string
+    Name        string
+    Role        UserRole  // patient / doctor
+    CreatedAt   time.Time
+}
+
+// 患者用户扩展模型
+type PatientUser struct {
+    UserID            string              // 用户ID
+    IDCard            string              // 身份证号
+    CurrentDepartment string              // 当前选择的科室（患者特有，可切换）
+    Departments       []PatientDepartment // 已注册的科室列表（关联查询）
+    CreatedAt         time.Time
+}
+
+// 医生用户扩展模型
+type DoctorUser struct {
+    UserID     string
+    IDCard     string    // 身份证号
+    Department string    // 所属科室（医生特有，固定不变）
+    Hospital   string    // 医院（可选）
+    CreatedAt  time.Time
+}
+
+// 患者科室关联模型
+type PatientDepartment struct {
+    ID          string      // 科室注册记录ID
+    PatientID   string      // 患者ID
+    Department  string      // 科室名称（12选1）
+    CreatedAt   time.Time   // 注册时间（内部使用，不返回前端）
 }
 
 // 医疗文件模型
@@ -489,7 +585,7 @@ type MedicalFile struct {
     ID          string
     PatientID   string
     Name        string
-    Category    string
+    Category    string    // 5种类型：lab-report / medical-image / medication / physical-exam / other
     FileSize    string
     FileUrl     string
     UploadedAt  time.Time
@@ -537,17 +633,20 @@ type AccessRecord struct {
 
 #### 2. 授权管理 (`/patient/authorization`)
 - ✅ 查看医生发起的授权请求
-- ✅ 查看医生详细信息（医院、科室、认证状态）
+- ✅ **身份溯源**：点击查看医生完整信息
+  - 医生详细信息（姓名、医院、科室、职称、认证状态）
+  - 该医生对此数据的访问记录
+  - 总访问次数和最后访问时间
 - ✅ 同意授权并设置有效期
 - ✅ 拒绝授权并说明理由
 - ✅ 查看授权历史记录
 - ✅ 撤销已授予的授权
 
-#### 3. 访问记录 (`/patient/access`)
-- ✅ 查看所有数据访问记录
-- ✅ 按医生、文件、时间筛选
-- ✅ 访问统计可视化展示
-- ✅ 导出访问记录（CSV/Excel）
+#### 3. 科室管理（主页顶部）
+- ✅ 查看当前科室
+- ✅ 切换到已注册的其他科室
+- ✅ 注册新科室（12个科室可选）
+- ✅ 查看所有已注册科室列表
 
 ### 医生端功能
 
@@ -558,6 +657,9 @@ type AccessRecord struct {
 - ✅ 按数据类型、授权状态筛选
 - ✅ 发起授权申请
 - ✅ 查看数据详情（需授权）
+- ✅ **患者身份溯源**：对已授权数据进行患者信息溯源
+  - 查看患者详细信息（脱敏处理）
+  - 追踪数据来源
 - ✅ 统计面板：数据总数、已授权、待授权、今日已查看
 
 ---
@@ -646,7 +748,7 @@ chore: 更新依赖包版本
 
 ## 📋 开发路线图
 
-### v1.0 ✅ （已完成）
+### v1.0 ✅ （已完成 - 2025-10-12）
 - [x] 用户认证系统
 - [x] 患者数据管理
 - [x] 授权管理系统
@@ -654,7 +756,23 @@ chore: 更新依赖包版本
 - [x] 医生数据访问
 - [x] 模拟数据支持
 
-### v1.1 🚧 （开发中）
+### v1.1 ✅ （已完成 - 2025-10-13）
+- [x] 患者科室管理功能
+  - [x] 多科室注册
+  - [x] 科室切换
+  - [x] 科室列表管理
+- [x] 身份溯源功能
+  - [x] 患者端：医生身份溯源
+  - [x] 医生端：患者身份溯源
+- [x] 统一枚举类型
+  - [x] 12个科室枚举
+  - [x] 5种医疗数据类型枚举
+- [x] 接口优化（v1.1.1）
+  - [x] 消除科室字段冗余
+  - [x] 基础接口与角色接口职责分离
+  - [x] 简化状态管理逻辑
+
+### v1.2 🚧 （开发中）
 - [ ] 文件上传功能
 - [ ] 数据预览功能
 - [ ] 批量操作支持
@@ -717,11 +835,40 @@ chore: 更新依赖包版本
 
 ## 📈 项目统计
 
-- **代码行数**: ~15,000+
-- **组件数量**: 20+
-- **API接口**: 20个（已优化）
+- **代码行数**: ~16,500+
+- **组件数量**: 22+
+- **API接口**: 25个（已优化，从111个精简）
+- **类型枚举**: 2个（12个科室 + 5种数据类型）
 - **开发周期**: 2个月
-- **最后更新**: 2025-10-12
+- **最后更新**: 2025-10-13 (v1.1.1)
+
+### 最近更新 (v1.1.1 - 2025-10-13)
+
+**接口优化**：
+- 🔧 **消除科室字段冗余**
+  - 基础 `User` 接口移除 `currentDepartment` 字段
+  - `PatientUser` 新增 `currentDepartment`（患者特有，可切换）
+  - `DoctorUser` 保持 `department`（医生固定科室）
+- 🔧 **职责分离**
+  - 基础接口只包含所有用户共有字段
+  - 角色特定字段放在扩展接口中
+- 🔧 **简化状态管理**
+  - 移除 `isActive` 字段，通过比较 `currentDepartment` 判断
+  - 移除 `registeredAt` 字段，前端不需要显示
+  - 类型更加明确：`departments` 从 `string[]` 改为 `PatientDepartment[]`
+
+**新增功能** (v1.1)：
+- ✅ 患者科室管理（3个API）
+- ✅ 双向身份溯源（2个API）
+- ✅ 统一枚举类型管理
+- ✅ 科室切换组件
+- ✅ 身份溯源弹窗
+
+**其他改进**：
+- 🔧 医疗数据类型统一（5种）
+- 🔧 科室枚举统一（12个）
+- 🔧 API文档完善
+- 🔧 类型安全增强
 
 ---
 

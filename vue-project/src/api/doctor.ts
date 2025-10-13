@@ -7,11 +7,13 @@ import request from '@/utils/request'
 import type { ApiResponse, PaginatedData } from '@/types/auth'
 import type { 
   MedicalFile,
-  AccessRecord 
+  AccessRecord,
+  DoctorTracePatientRequest,
+  DoctorTracePatientResponse
 } from '@/types/medicalData'
 import { mockService } from '@/mock/mockService'
 
-// ==================== 已使用的API（3个）====================
+// ==================== 已使用的API（4个）====================
 
 /**
  * ✅ 获取医生端可访问的医疗数据列表
@@ -243,8 +245,100 @@ export const getAccessHistory = async (params?: {
   return request.get('/doctor/access-history', { params })
 }
 
+/**
+ * ✅ 医生端患者身份溯源
+ * 
+ * @description 医生对已授权的医疗数据进行患者身份溯源，获取患者详细信息
+ * 
+ * @param dataId - 医疗数据ID
+ * 
+ * @returns Promise<ApiResponse<DoctorTracePatientResponse>> - 溯源结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证医生身份（从token获取医生ID）
+ * 2. 查询医疗数据记录：
+ *    - 验证数据是否存在
+ *    - 验证数据对该医生的授权状态是否为'authorized'
+ * 3. 检查授权是否有效：
+ *    - 检查授权是否过期
+ *    - 检查授权是否被撤销
+ * 4. 获取患者详细信息：
+ *    - 患者姓名、性别、年龄
+ *    - 患者联系电话（脱敏处理）
+ *    - 患者身份证号（脱敏处理）
+ *    - 患者注册科室
+ * 5. 记录溯源操作日志（审计用）
+ * 6. 返回患者信息和数据信息
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "患者身份溯源成功",
+ *   data: {
+ *     patient: {
+ *       id: string,
+ *       name: string,
+ *       gender: string,
+ *       age: number,
+ *       phone: string,              // 脱敏：138****5678
+ *       idCard: string,             // 脱敏：320***********1234
+ *       registeredDepartment: string
+ *     },
+ *     dataInfo: {
+ *       id: string,
+ *       name: string,
+ *       type: string,
+ *       uploadDate: string
+ *     },
+ *     traceTime: string             // 溯源时间
+ *   }
+ * }
+ * 
+ * @调用位置:
+ * - src/views/doctor/DataManagementView.vue (数据详情弹窗-身份溯源按钮)
+ * 
+ * @应用场景:
+ * - 医生在已授权情况下，需要知道数据所属患者的身份信息
+ * - 用于诊断、会诊等医疗场景
+ * - 保护患者隐私，只有授权后才能溯源
+ * 
+ * @错误处理:
+ * - 400: 请求参数错误
+ * - 403: 无权溯源（未授权或授权已过期）
+ * - 404: 数据不存在
+ * 
+ * @隐私保护:
+ * - 只能溯源已授权的数据
+ * - 敏感信息（电话、身份证）进行脱敏处理
+ * - 每次溯源都会记录日志，便于审计
+ * - 患者可以查看谁对其数据进行了溯源
+ * 
+ * @注意事项:
+ * - 溯源操作会被记录到访问日志
+ * - 频繁溯源可能触发安全审计
+ * - 授权过期后无法溯源
+ * 
+ * @example
+ * // 对某个数据进行患者身份溯源
+ * const response = await tracePatientIdentity('data-123')
+ * if (response.success && response.data) {
+ *   console.log('患者信息:', response.data.patient)
+ *   console.log('溯源时间:', response.data.traceTime)
+ * }
+ */
+export const tracePatientIdentity = async (
+  dataId: string
+): Promise<ApiResponse<DoctorTracePatientResponse>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.traceDoctorPatientIdentity(dataId)
+  if (mockResponse) return mockResponse as any
+  
+  return request.post(`/doctor/medical-data/${dataId}/trace-patient`)
+}
+
 // 导出所有API函数作为默认对象
 export default {
   getMedicalDataList,
-  getAccessHistory
+  getAccessHistory,
+  tracePatientIdentity
 }

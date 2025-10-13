@@ -1,9 +1,39 @@
-// 医疗文件类别枚举
-// - report: 检验报告
-// - image: 医学影像
-// - prescription: 处方记录
+// 医疗文件类别枚举（5种类型）
+// - lab-report: 检验报告
+// - medical-image: 影像资料
+// - medication: 用药记录
+// - physical-exam: 体检报告
 // - other: 其他类型
-export type FileCategory = 'report' | 'image' | 'prescription' | 'other'
+export type FileCategory = 
+  | 'lab-report'      // 检验报告
+  | 'medical-image'   // 影像资料
+  | 'medication'      // 用药记录
+  | 'physical-exam'   // 体检报告
+  | 'other'           // 其他类型
+
+// 医疗数据类型常量（全局统一使用）
+export const MEDICAL_DATA_TYPES = [
+  { label: '检验报告', value: 'lab-report' as FileCategory },
+  { label: '影像资料', value: 'medical-image' as FileCategory },
+  { label: '用药记录', value: 'medication' as FileCategory },
+  { label: '体检报告', value: 'physical-exam' as FileCategory },
+  { label: '其他类型', value: 'other' as FileCategory }
+] as const
+
+// 医疗数据类型映射（用于显示）
+export const MEDICAL_DATA_TYPE_MAP: Record<FileCategory, string> = {
+  'lab-report': '检验报告',
+  'medical-image': '影像资料',
+  'medication': '用药记录',
+  'physical-exam': '体检报告',
+  'other': '其他类型'
+}
+
+// 医疗数据类型选项（用于 el-select，包含"全部类型"选项）
+export const MEDICAL_DATA_TYPE_OPTIONS = [
+  { label: '全部类型', value: '' },
+  ...MEDICAL_DATA_TYPES
+]
 
 // 文件状态枚举
 // - uploading: 上传中
@@ -241,4 +271,92 @@ export interface AccessHistoryResponse {
     pageSize: number        // 每页数量
   }
   message: string           // 提示消息
+}
+
+// ==================== 授权管理类型 ====================
+
+// 授权请求
+export interface AuthorizationRequest {
+  id: string                    // 授权请求ID
+  dataId: string                // 数据ID
+  dataName: string              // 数据名称
+  dataType: string              // 数据类型
+  dataUploadDate: string        // 数据上传时间
+  doctor: {                     // 医生信息
+    id: string
+    name: string
+    hospital: string
+    department: string
+    title: string
+    isVerified: boolean
+  }
+  reason: string                // 申请理由
+  status: string                // 状态
+  requestedAt: string           // 申请时间
+  processedAt?: string          // 处理时间
+  expiresAt?: string            // 过期时间
+  rejectReason?: string         // 拒绝理由
+}
+
+// 同意授权数据
+export interface ApproveAuthorizationData {
+  requestId: string             // 授权请求ID
+  expiresIn: number             // 有效期（天数）
+  notes?: string                // 备注
+}
+
+// 拒绝授权数据
+export interface RejectAuthorizationData {
+  requestId: string             // 授权请求ID
+  reason: string                // 拒绝理由
+}
+
+// 身份溯源请求数据
+export interface TraceIdentityData {
+  requestId: string             // 授权请求ID
+}
+
+// 身份溯源响应数据
+export interface TraceIdentityResponse {
+  doctor: {                     // 医生详细信息
+    id: string
+    name: string
+    hospital: string
+    department: string
+    title: string
+    isVerified: boolean
+  }
+  accessRecords: AccessRecord[] // 该医生对此数据的访问记录
+  totalAccess: number           // 总访问次数
+  lastAccessTime?: string       // 最后访问时间
+}
+
+// ==================== 医生端身份溯源类型 ====================
+
+// 医生端对患者身份进行溯源的请求数据
+export interface DoctorTracePatientRequest {
+  dataId: string                // 医疗数据ID
+}
+
+// 患者详细信息接口
+export interface PatientInfo {
+  id: string                    // 患者ID
+  name: string                  // 患者姓名
+  gender: string                // 性别
+  age: number                   // 年龄
+  phone?: string                // 联系电话（可选）
+  idCard?: string               // 身份证号（脱敏，可选）
+  registeredDepartment?: string // 注册科室（可选）
+}
+
+// 医生端溯源患者身份的响应数据
+export interface DoctorTracePatientResponse {
+  patient: PatientInfo          // 患者详细信息
+  dataInfo: {                   // 关联的数据信息
+    id: string
+    name: string
+    type: string
+    uploadDate: string
+  }
+  traceTime: string             // 溯源时间
 }

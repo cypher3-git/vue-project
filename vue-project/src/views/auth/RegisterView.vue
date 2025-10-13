@@ -80,11 +80,11 @@
         </el-input>
       </el-form-item>
 
-      <!-- 医生科室选择 -->
-      <el-form-item v-if="registerForm.role === 'doctor'" prop="department">
+      <!-- 科室选择（患者和医生都需要） -->
+      <el-form-item prop="department">
         <el-select
           v-model="registerForm.department"
-          placeholder="请选择科室"
+          :placeholder="registerForm.role === 'patient' ? '请选择初始就诊科室' : '请选择工作科室'"
           clearable
           class="form-input"
           filterable
@@ -92,30 +92,12 @@
           <template #prefix>
             <el-icon><OfficeBuilding /></el-icon>
           </template>
-          <el-option label="内科" value="内科" />
-          <el-option label="外科" value="外科" />
-          <el-option label="儿科" value="儿科" />
-          <el-option label="妇产科" value="妇产科" />
-          <el-option label="心血管科" value="心血管科" />
-          <el-option label="神经内科" value="神经内科" />
-          <el-option label="神经外科" value="神经外科" />
-          <el-option label="骨科" value="骨科" />
-          <el-option label="呼吸科" value="呼吸科" />
-          <el-option label="消化科" value="消化科" />
-          <el-option label="肾内科" value="肾内科" />
-          <el-option label="内分泌科" value="内分泌科" />
-          <el-option label="血液科" value="血液科" />
-          <el-option label="肿瘤科" value="肿瘤科" />
-          <el-option label="皮肤科" value="皮肤科" />
-          <el-option label="眼科" value="眼科" />
-          <el-option label="耳鼻喉科" value="耳鼻喉科" />
-          <el-option label="口腔科" value="口腔科" />
-          <el-option label="中医科" value="中医科" />
-          <el-option label="康复科" value="康复科" />
-          <el-option label="麻醉科" value="麻醉科" />
-          <el-option label="急诊科" value="急诊科" />
-          <el-option label="ICU" value="ICU" />
-          <el-option label="其他科室" value="其他科室" />
+          <el-option
+            v-for="option in DEPARTMENT_OPTIONS"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
         </el-select>
       </el-form-item>
 
@@ -171,6 +153,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { UserRole, PatientRegisterData, DoctorRegisterData } from '@/types/auth'
+import { DEPARTMENT_OPTIONS } from '@/types/auth'
 import { authApi } from '@/api'
 
 const authStore = useAuthStore()
@@ -233,17 +216,13 @@ const registerRules = computed<FormRules>(() => {
     ]
   }
 
-  // 如果是医生角色，添加科室验证规则
-  if (registerForm.role === 'doctor') {
-    return {
-      ...baseRules,
-      department: [
-        { required: true, message: '请选择科室' }
-      ]
-    }
+  // 患者和医生都需要科室验证规则
+  return {
+    ...baseRules,
+    department: [
+      { required: true, message: registerForm.role === 'patient' ? '请选择初始就诊科室' : '请选择工作科室' }
+    ]
   }
-
-  return baseRules
 })
 
 // 监听角色变化，清除表单验证状态
@@ -316,7 +295,7 @@ const handleRegister = async () => {
   try {
     await registerFormRef.value.validate()
     
-    // 根据角色构建注册数据
+    // 根据角色构建注册数据（患者和医生都需要科室）
     let registerData: PatientRegisterData | DoctorRegisterData
     
     if (registerForm.role === 'patient') {
@@ -325,6 +304,7 @@ const handleRegister = async () => {
         idCard: registerForm.idCard,
         code: registerForm.code,
         role: 'patient',
+        department: registerForm.department,
         agreeToTerms: registerForm.agreeToTerms
       }
     } else {

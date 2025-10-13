@@ -38,16 +38,6 @@ const routes: RouteRecordRaw[] = [
         }
       },
       {
-        path: 'access',
-        name: 'PatientAccess',
-        component: () => import('@/views/patient/AccessView.vue'),
-        meta: {
-          title: '访问记录',
-          requiresAuth: true,
-          role: 'patient'
-        }
-      },
-      {
         path: 'authorization',
         name: 'PatientAuthorization',
         component: () => import('@/views/patient/AuthorizationView.vue'),

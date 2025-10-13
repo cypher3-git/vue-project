@@ -21,12 +21,12 @@
             clearable 
             style="width: 150px; margin-right: 16px;"
           >
-            <el-option label="全部类型" value="" />
-            <el-option label="检验报告" value="检验报告" />
-            <el-option label="影像资料" value="影像资料" />
-            <el-option label="病历记录" value="病历记录" />
-            <el-option label="体检报告" value="体检报告" />
-            <el-option label="用药记录" value="用药记录" />
+            <el-option
+              v-for="option in MEDICAL_DATA_TYPE_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
           
           <el-select 
@@ -329,11 +329,12 @@
             style="width: 100%"
             @change="handleTypeChange"
           >
-            <el-option label="检验报告" value="检验报告" />
-            <el-option label="影像资料" value="影像资料" />
-            <el-option label="病历记录" value="病历记录" />
-            <el-option label="体检报告" value="体检报告" />
-            <el-option label="用药记录" value="用药记录" />
+            <el-option
+              v-for="option in MEDICAL_DATA_TYPES"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
         </el-form-item>
         
@@ -415,6 +416,13 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { useMedicalDataStore } from '@/stores/medicalData'
+import { DEPARTMENT_OPTIONS } from '@/types/auth'
+import { 
+  MEDICAL_DATA_TYPES, 
+  MEDICAL_DATA_TYPE_OPTIONS,
+  MEDICAL_DATA_TYPE_MAP,
+  type FileCategory 
+} from '@/types/medicalData'
 
 // Medical Data Store
 const medicalDataStore = useMedicalDataStore()
@@ -460,25 +468,12 @@ const uploadForm = ref({
 })
 
 
-// 科室列表
-const departmentList = ref([
-  { label: '心血管科', value: '心血管科' },
-  { label: '内科', value: '内科' },
-  { label: '骨科', value: '骨科' },
-  { label: '神经科', value: '神经科' },
-  { label: '外科', value: '外科' },
-  { label: '呼吸内科', value: '呼吸内科' },
-  { label: '消化内科', value: '消化内科' },
-  { label: '泌尿科', value: '泌尿科' },
-  { label: '妇产科', value: '妇产科' },
-  { label: '儿科', value: '儿科' },
-  { label: '内分泌科', value: '内分泌科' },
-  { label: '肿瘤科', value: '肿瘤科' }
-])
+// 科室列表（使用全局统一常量）
+const departmentList = ref(DEPARTMENT_OPTIONS)
 
-// 数据名称选项配置
-const dataNameOptions = {
-  '检验报告': [
+// 数据名称选项配置（使用统一的 FileCategory 类型）
+const dataNameOptions: Record<FileCategory, Array<{ label: string; value: string }>> = {
+  'lab-report': [
     { label: '血常规检查报告', value: '血常规检查报告' },
     { label: '尿常规检查报告', value: '尿常规检查报告' },
     { label: '肝功能检查报告', value: '肝功能检查报告' },
@@ -492,7 +487,7 @@ const dataNameOptions = {
     { label: '免疫功能检查', value: '免疫功能检查' },
     { label: '凝血功能检查', value: '凝血功能检查' }
   ],
-  '影像资料': [
+  'medical-image': [
     { label: '胸部X光片', value: '胸部X光片' },
     { label: '腹部X光片', value: '腹部X光片' },
     { label: '头颅CT', value: '头颅CT' },
@@ -507,19 +502,17 @@ const dataNameOptions = {
     { label: '心电图', value: '心电图' },
     { label: '24小时动态心电图', value: '24小时动态心电图' }
   ],
-  '病历记录': [
-    { label: '门诊病历', value: '门诊病历' },
-    { label: '住院病历', value: '住院病历' },
-    { label: '急诊病历', value: '急诊病历' },
-    { label: '专科门诊病历', value: '专科门诊病历' },
-    { label: '复诊病历', value: '复诊病历' },
-    { label: '会诊记录', value: '会诊记录' },
-    { label: '手术记录', value: '手术记录' },
-    { label: '麻醉记录', value: '麻醉记录' },
-    { label: '护理记录', value: '护理记录' },
-    { label: '出院小结', value: '出院小结' }
+  'medication': [
+    { label: '门诊处方记录', value: '门诊处方记录' },
+    { label: '住院用药记录', value: '住院用药记录' },
+    { label: '慢性病用药记录', value: '慢性病用药记录' },
+    { label: '特殊用药记录', value: '特殊用药记录' },
+    { label: '疫苗接种记录', value: '疫苗接种记录' },
+    { label: '药物过敏记录', value: '药物过敏记录' },
+    { label: '中药处方记录', value: '中药处方记录' },
+    { label: '输液记录', value: '输液记录' }
   ],
-  '体检报告': [
+  'physical-exam': [
     { label: '入职体检报告', value: '入职体检报告' },
     { label: '年度健康体检报告', value: '年度健康体检报告' },
     { label: '专项体检报告', value: '专项体检报告' },
@@ -530,16 +523,7 @@ const dataNameOptions = {
     { label: '妇科体检报告', value: '妇科体检报告' },
     { label: '男科体检报告', value: '男科体检报告' }
   ],
-  '用药记录': [
-    { label: '门诊处方记录', value: '门诊处方记录' },
-    { label: '住院用药记录', value: '住院用药记录' },
-    { label: '慢性病用药记录', value: '慢性病用药记录' },
-    { label: '特殊用药记录', value: '特殊用药记录' },
-    { label: '疫苗接种记录', value: '疫苗接种记录' },
-    { label: '药物过敏记录', value: '药物过敏记录' },
-    { label: '中药处方记录', value: '中药处方记录' },
-    { label: '输液记录', value: '输液记录' }
-  ]
+  'other': []
 }
 
 // 计算可用的数据名称选项
@@ -547,7 +531,7 @@ const availableNameOptions = computed(() => {
   if (!uploadForm.value.type) {
     return []
   }
-  return dataNameOptions[uploadForm.value.type as keyof typeof dataNameOptions] || []
+  return dataNameOptions[uploadForm.value.type as FileCategory] || []
 })
 
 // 表单验证规则

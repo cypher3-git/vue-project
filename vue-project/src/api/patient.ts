@@ -4,11 +4,19 @@
  */
 
 import request from '@/utils/request'
-import type { ApiResponse, PaginatedData } from '@/types/auth'
+import type { 
+  ApiResponse, 
+  PaginatedData,
+  PatientDepartment,
+  RegisterDepartmentData,
+  SwitchDepartmentData
+} from '@/types/auth'
 import type {
   AuthorizationRequest,
   ApproveAuthorizationData,
-  RejectAuthorizationData
+  RejectAuthorizationData,
+  TraceIdentityData,
+  TraceIdentityResponse
 } from '@/types/medicalData'
 import { mockService } from '@/mock/mockService'
 
@@ -309,6 +317,89 @@ export const revokeAuthorization = async (authorizationId: string): Promise<ApiR
 }
 
 /**
+ * ✅ 身份溯源
+ * 
+ * @description 患者对授权请求进行身份溯源，获取医生详细信息和访问记录
+ * 
+ * @param data - 溯源请求数据
+ * @param data.requestId - 授权请求ID
+ * 
+ * @returns Promise<ApiResponse<TraceIdentityResponse>> - 溯源结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份（从token获取患者ID）
+ * 2. 查询授权请求记录：
+ *    - 验证请求是否存在
+ *    - 验证请求是否属于当前患者
+ * 3. 获取医生详细信息：
+ *    - 医生姓名、医院、科室、职称
+ *    - 医生认证状态
+ * 4. 查询该医生对该数据的所有访问记录：
+ *    - 访问类型（查看/下载/预览）
+ *    - 访问时间
+ *    - IP地址等
+ * 5. 统计访问信息：
+ *    - 总访问次数
+ *    - 最后访问时间
+ * 6. 记录溯源操作日志
+ * 7. 返回溯源结果
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "身份溯源成功",
+ *   data: {
+ *     doctor: {
+ *       id: string,
+ *       name: string,
+ *       hospital: string,
+ *       department: string,
+ *       title: string,
+ *       isVerified: boolean
+ *     },
+ *     accessRecords: [
+ *       {
+ *         id: string,
+ *         accessType: 'view' | 'download' | 'preview',
+ *         accessTime: string,
+ *         ipAddress: string,
+ *         duration: number,
+ *         ...
+ *       }
+ *     ],
+ *     totalAccess: number,
+ *     lastAccessTime: string
+ *   }
+ * }
+ * 
+ * @应用场景:
+ * - 患者在授权管理页面查看医生真实身份
+ * - 了解医生对数据的访问历史
+ * - 增强患者对数据访问的知情权
+ * 
+ * @注意事项:
+ * - 每次溯源都会记录日志，用于审计
+ * - 溯源成功后显示完整医生信息
+ * - 访问记录按时间倒序排列
+ * 
+ * @example
+ * const response = await traceIdentity({ requestId: 'req-123' })
+ * if (response.success && response.data) {
+ *   console.log('医生信息:', response.data.doctor)
+ *   console.log('访问记录:', response.data.accessRecords)
+ * }
+ */
+export const traceIdentity = async (
+  data: TraceIdentityData
+): Promise<ApiResponse<TraceIdentityResponse>> => {
+  // 如果启用了模拟数据，返回模拟数据
+  const mockResponse = await mockService.traceIdentity(data.requestId)
+  if (mockResponse) return mockResponse as any
+  
+  return request.post('/patient/authorization-requests/trace-identity', data)
+}
+
+/**
  * ✅ 获取授权历史记录
  * 
  * @description 查询患者授权的完整历史记录，包括所有状态
@@ -399,11 +490,145 @@ export const getAuthorizationHistory = async (params?: {
   return request.get('/patient/authorization-history', { params })
 }
 
+/**
+ * ✅ 获取患者已注册的科室列表
+ * 
+ * @description 获取当前患者已注册的所有科室信息
+ * 
+ * @returns Promise<ApiResponse<PatientDepartment[]>> - 已注册科室列表
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份（从token获取患者ID）
+ * 2. 查询患者科室注册表（patient_departments）
+ * 3. 获取所有已注册科室
+ * 4. 标记当前活跃科室
+ * 5. 按注册时间排序
+ * 6. 返回科室列表
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "查询成功",
+ *   data: [
+ *     {
+ *       id: string,              // 科室注册记录ID
+ *       department: string       // 科室名称
+ *     },
+ *     // ... 更多科室
+ *   ]
+ * }
+ * 
+ * @应用场景:
+ * - 科室切换弹窗中显示可选科室列表
+ * - 患者主页显示当前科室
+ * 
+ * @example
+ * const response = await getPatientDepartments()
+ * if (response.success && response.data) {
+ *   const departments = response.data
+ * }
+ */
+export const getPatientDepartments = async (): Promise<ApiResponse<PatientDepartment[]>> => {
+  return request.get('/patient/departments')
+}
+
+/**
+ * ✅ 患者注册新科室
+ * 
+ * @description 患者在已有账户基础上注册新的科室
+ * 
+ * @param data - 注册科室数据
+ * @param data.department - 科室名称
+ * 
+ * @returns Promise<ApiResponse<PatientDepartment>> - 新注册的科室信息
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份（从token获取患者ID）
+ * 2. 检查该科室是否已注册
+ * 3. 如果未注册，创建新的科室注册记录
+ * 4. 生成科室注册记录ID
+ * 5. 设置注册时间
+ * 6. 返回新注册的科室信息
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "科室注册成功",
+ *   data: {
+ *     id: string,
+ *     department: string
+ *   }
+ * }
+ * 
+ * @错误处理:
+ * - 400: 科室名称无效
+ * - 409: 科室已注册
+ * 
+ * @应用场景:
+ * - 用户需要在新科室就诊时注册
+ * - 科室切换弹窗中的"注册新科室"功能
+ * 
+ * @example
+ * const response = await registerNewDepartment({ department: '心血管科' })
+ */
+export const registerNewDepartment = async (
+  data: RegisterDepartmentData
+): Promise<ApiResponse<PatientDepartment>> => {
+  return request.post('/patient/departments', data)
+}
+
+/**
+ * ✅ 切换当前科室
+ * 
+ * @description 患者切换到已注册的其他科室
+ * 
+ * @param data - 切换科室数据
+ * @param data.departmentId - 要切换到的科室记录ID
+ * 
+ * @returns Promise<ApiResponse> - 切换结果
+ * 
+ * @后端处理逻辑:
+ * 1. 验证患者身份（从token获取患者ID）
+ * 2. 验证目标科室是否属于该患者
+ * 3. 更新用户表的currentDepartment字段
+ * 4. 返回成功响应
+ * 
+ * @后端返回数据:
+ * {
+ *   success: true,
+ *   message: "科室切换成功",
+ *   data: {
+ *     currentDepartment: string  // 当前科室名称
+ *   }
+ * }
+ * 
+ * @错误处理:
+ * - 400: 科室ID无效
+ * - 403: 科室不属于当前患者
+ * - 404: 科室未找到
+ * 
+ * @应用场景:
+ * - 用户在不同科室之间切换
+ * - 根据就诊需求切换对应科室
+ * 
+ * @example
+ * const response = await switchDepartment({ departmentId: 'dept-123' })
+ */
+export const switchDepartment = async (
+  data: SwitchDepartmentData
+): Promise<ApiResponse> => {
+  return request.post('/patient/departments/switch', data)
+}
+
 // 导出所有API函数作为默认对象
 export default {
   getAuthorizationRequests,
   approveAuthorization,
   rejectAuthorization,
   revokeAuthorization,
-  getAuthorizationHistory
+  traceIdentity,
+  getAuthorizationHistory,
+  getPatientDepartments,
+  registerNewDepartment,
+  switchDepartment
 }

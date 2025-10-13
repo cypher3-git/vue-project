@@ -53,20 +53,6 @@
         style="width: 100%"
         v-loading="loading"
       >
-        <el-table-column label="医生信息" width="180">
-          <template #default="scope">
-            <div class="doctor-info">
-              <el-avatar :size="40" class="doctor-avatar">
-                {{ scope.row.doctorName.charAt(0) }}
-              </el-avatar>
-              <div class="doctor-details">
-                <div class="doctor-name">{{ scope.row.doctorName }}</div>
-                <div class="doctor-dept">{{ scope.row.doctorDepartment }}</div>
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-        
         <el-table-column label="请求数据" width="250">
           <template #default="scope">
             <div class="data-info">
@@ -92,32 +78,45 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" width="200" fixed="right" align="center">
+        <el-table-column label="操作" width="280" fixed="right" align="center">
           <template #default="scope">
             <div class="action-buttons">
-              <el-button 
-                v-if="scope.row.status === 'pending'"
-                type="success" 
-                size="small" 
-                @click="approveRequest(scope.row)"
-              >
-                同意
-              </el-button>
-              <el-button 
-                v-if="scope.row.status === 'pending'"
-                type="danger" 
-                size="small" 
-                @click="rejectRequest(scope.row)"
-              >
-                拒绝
-              </el-button>
-              <el-button 
-                type="text" 
-                size="small" 
-                @click="viewDetail(scope.row)"
-              >
-                详情
-              </el-button>
+              <!-- 第一行：同意/拒绝/身份溯源 -->
+              <div class="action-row">
+                <el-button 
+                  v-if="scope.row.status === 'pending'"
+                  type="success" 
+                  size="small" 
+                  @click="approveRequest(scope.row)"
+                >
+                  同意
+                </el-button>
+                <el-button 
+                  v-if="scope.row.status === 'pending'"
+                  type="danger" 
+                  size="small" 
+                  @click="rejectRequest(scope.row)"
+                >
+                  拒绝
+                </el-button>
+                <el-button 
+                  type="warning" 
+                  size="small" 
+                  @click="traceIdentity(scope.row)"
+                >
+                  身份溯源
+                </el-button>
+              </div>
+              <!-- 第二行：详情 -->
+              <div class="action-row">
+                <el-button 
+                  type="text" 
+                  size="small" 
+                  @click="viewDetail(scope.row)"
+                >
+                  详情
+                </el-button>
+              </div>
             </div>
           </template>
         </el-table-column>
@@ -140,9 +139,15 @@
     <!-- 授权详情对话框 -->
     <el-dialog v-model="detailDialogVisible" title="授权请求详情" width="700px">
       <div v-if="selectedRequest" class="request-detail">
+        <el-alert
+          title="提示"
+          description="医生身份信息已隐藏，点击【身份溯源】查看医生详情和访问记录"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 20px;"
+        />
+        
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="医生姓名">{{ selectedRequest.doctorName }}</el-descriptions-item>
-          <el-descriptions-item label="所属科室">{{ selectedRequest.doctorDepartment }}</el-descriptions-item>
           <el-descriptions-item label="请求数据">{{ selectedRequest.dataName }}</el-descriptions-item>
           <el-descriptions-item label="数据类型">{{ selectedRequest.dataType }}</el-descriptions-item>
           <el-descriptions-item label="申请时间" :span="2">{{ selectedRequest.requestedAt }}</el-descriptions-item>
@@ -265,22 +270,114 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 身份溯源对话框 -->
+    <el-dialog v-model="traceDialogVisible" title="身份溯源" width="800px">
+      <div v-if="traceData" class="trace-content">
+        <!-- 医生信息 -->
+        <el-card class="doctor-card" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <el-icon color="#4dd0e1"><User /></el-icon>
+              <span>医生详细信息</span>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="医生姓名">{{ traceData.doctor.name }}</el-descriptions-item>
+            <el-descriptions-item label="所属医院">{{ traceData.doctor.hospital }}</el-descriptions-item>
+            <el-descriptions-item label="科室">{{ traceData.doctor.department }}</el-descriptions-item>
+            <el-descriptions-item label="职称">{{ traceData.doctor.title }}</el-descriptions-item>
+            <el-descriptions-item label="认证状态" :span="2">
+              <el-tag :type="traceData.doctor.isVerified ? 'success' : 'warning'">
+                {{ traceData.doctor.isVerified ? '已认证' : '未认证' }}
+              </el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 访问统计 -->
+        <el-card class="stats-card" shadow="never" style="margin-top: 20px;">
+          <template #header>
+            <div class="card-header">
+              <el-icon color="#4dd0e1"><DataAnalysis /></el-icon>
+              <span>访问统计</span>
+            </div>
+          </template>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <div class="stat-item">
+                <div class="stat-label">总访问次数</div>
+                <div class="stat-value">{{ traceData.totalAccess }}</div>
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div class="stat-item">
+                <div class="stat-label">最后访问时间</div>
+                <div class="stat-value small">{{ traceData.lastAccessTime || '暂无' }}</div>
+              </div>
+            </el-col>
+          </el-row>
+        </el-card>
+
+        <!-- 访问记录 -->
+        <el-card class="access-records-card" shadow="never" style="margin-top: 20px;">
+          <template #header>
+            <div class="card-header">
+              <el-icon color="#4dd0e1"><Document /></el-icon>
+              <span>访问记录</span>
+            </div>
+          </template>
+          <el-table :data="traceData.accessRecords" style="width: 100%" max-height="300">
+            <el-table-column prop="accessType" label="访问类型" width="100">
+              <template #default="scope">
+                <el-tag size="small" :type="getAccessTypeTag(scope.row.accessType)">
+                  {{ getAccessTypeText(scope.row.accessType) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="accessTime" label="访问时间" width="180" />
+            <el-table-column prop="duration" label="访问时长" width="100">
+              <template #default="scope">
+                {{ scope.row.duration ? `${scope.row.duration}秒` : '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="ipAddress" label="IP地址" />
+          </el-table>
+          
+          <el-empty 
+            v-if="!traceData.accessRecords || traceData.accessRecords.length === 0"
+            description="暂无访问记录"
+          />
+        </el-card>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="traceDialogVisible = false">关闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, User, DataAnalysis, Document } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { patientApi } from '@/api'
+import type { TraceIdentityResponse } from '@/types/medicalData'
+import { mockService } from '@/mock/mockService'
 
 // 响应式数据
 const loading = ref(false)
 const detailDialogVisible = ref(false)
 const approveDialogVisible = ref(false)
 const rejectDialogVisible = ref(false)
+const traceDialogVisible = ref(false)
 const selectedRequest = ref<any>(null)
 const submitting = ref(false)
+const traceData = ref<TraceIdentityResponse | null>(null)
 
 // 筛选条件
 const filters = ref({
@@ -321,71 +418,36 @@ const requestList = ref<any[]>([])
 const loadRequests = async () => {
   loading.value = true
   try {
-    // TODO: 调用 API 获取授权请求列表
-    // const response = await patientApi.getAuthorizationRequests({...})
+    // 从 mockService 获取数据（演示账户使用）
+    const mockResponse = await mockService.getPatientAuthorizationRequests()
     
-    // 暂时使用模拟数据
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    requestList.value = [
-      {
-        id: '1',
-        doctorId: 'D001',
-        doctorName: '张医生',
-        doctorDepartment: '心血管科',
-        dataId: 'DATA001',
-        dataName: '血常规检查报告',
-        dataType: '检验报告',
-        reason: '需要查看您的血常规检查结果以评估当前病情发展情况，为后续治疗方案提供参考。',
-        purpose: 'diagnosis',
-        requestedAt: '2024-01-20 14:30:00',
-        status: 'pending'
-      },
-      {
-        id: '2',
-        doctorId: 'D002',
-        doctorName: '李医生',
-        doctorDepartment: '呼吸内科',
-        dataId: 'DATA002',
-        dataName: '胸部X光片',
-        dataType: '影像资料',
-        reason: '根据您的症状，需要查看胸部X光片进行肺部检查。',
-        purpose: 'diagnosis',
-        requestedAt: '2024-01-19 10:15:00',
-        status: 'approved',
-        processedAt: '2024-01-19 11:20:00'
-      },
-      {
-        id: '3',
-        doctorId: 'D003',
-        doctorName: '王医生',
-        doctorDepartment: '内分泌科',
-        dataId: 'DATA003',
-        dataName: '血糖检查报告',
-        dataType: '检验报告',
-        reason: '需要评估您的血糖控制情况。',
-        purpose: 'evaluation',
-        requestedAt: '2024-01-18 16:45:00',
-        status: 'rejected',
-        processedAt: '2024-01-18 17:00:00',
-        rejectReason: '该数据不适合分享'
-      },
-      {
-        id: '4',
-        doctorId: 'D001',
-        doctorName: '张医生',
-        doctorDepartment: '心血管科',
-        dataId: 'DATA004',
-        dataName: '心电图检查',
-        dataType: '检验报告',
-        reason: '会诊需要，需要查看完整的心电图数据。',
-        purpose: 'consultation',
-        requestedAt: '2024-01-17 09:20:00',
-        status: 'pending'
-      }
-    ]
-    
-    pagination.value.total = requestList.value.length
+    if (mockResponse && mockResponse.success) {
+      requestList.value = mockResponse.data.requests
+      pagination.value.total = mockResponse.data.total
+    } else {
+      // 如果不是演示账户，使用真实API
+      // const response = await patientApi.getAuthorizationRequests({...})
+      // requestList.value = response.data.items
+      // pagination.value.total = response.data.total
+      
+      // 临时：使用默认模拟数据
+      requestList.value = [
+        {
+          id: '1',
+          doctorId: 'D001',
+          doctorName: '张医生',
+          doctorDepartment: '心血管科',
+          dataId: 'DATA001',
+          dataName: '血常规检查报告',
+          dataType: '检验报告',
+          reason: '需要查看您的血常规检查结果以评估当前病情发展情况，为后续治疗方案提供参考。',
+          purpose: 'diagnosis',
+          requestedAt: '2024-01-20 14:30:00',
+          status: 'pending'
+        }
+      ]
+      pagination.value.total = requestList.value.length
+    }
   } catch (error) {
     console.error('加载授权请求列表失败:', error)
     ElMessage.error('加载授权请求列表失败')
@@ -528,6 +590,51 @@ const confirmReject = async () => {
   }
 }
 
+// 身份溯源
+const traceIdentity = async (request: any) => {
+  try {
+    loading.value = true
+    
+    // 调用身份溯源API
+    const response = await patientApi.traceIdentity({
+      requestId: request.id
+    })
+    
+    if (response.success && response.data) {
+      traceData.value = response.data
+      traceDialogVisible.value = true
+      ElMessage.success('身份溯源成功')
+    } else {
+      ElMessage.error(response.message || '身份溯源失败')
+    }
+  } catch (error: any) {
+    console.error('身份溯源失败:', error)
+    ElMessage.error('身份溯源失败，请重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取访问类型标签
+const getAccessTypeTag = (type: string) => {
+  switch (type) {
+    case 'view': return 'primary'
+    case 'download': return 'success'
+    case 'preview': return 'info'
+    default: return ''
+  }
+}
+
+// 获取访问类型文本
+const getAccessTypeText = (type: string) => {
+  switch (type) {
+    case 'view': return '查看'
+    case 'download': return '下载'
+    case 'preview': return '预览'
+    default: return type
+  }
+}
+
 // 分页处理
 const handleSizeChange = async (size: number) => {
   pagination.value.size = size
@@ -649,10 +756,16 @@ onMounted(async () => {
 /* 操作按钮 */
 .action-buttons {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-row {
+  display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 /* 分页 */
@@ -674,6 +787,50 @@ onMounted(async () => {
 
 .dialog-footer {
   text-align: right;
+}
+
+/* 身份溯源弹窗样式 */
+.trace-content {
+  padding: 8px 0;
+}
+
+.doctor-card,
+.stats-card,
+.access-records-card {
+  border: none !important;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #4dd0e1;
+}
+
+.stat-value.small {
+  font-size: 14px;
+  color: #303133;
 }
 
 /* 响应式设计 */

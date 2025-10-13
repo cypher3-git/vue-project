@@ -5,6 +5,18 @@
         <h1 class="app-title">医联可信·数据溯源系统</h1>
       </div>
       <div class="header-right">
+        <!-- 患者科室切换按钮 -->
+        <div v-if="userStore.isPatient" class="department-switch">
+          <el-button 
+            type="primary" 
+            size="default"
+            @click="showDepartmentDialog = true"
+            :icon="OfficeBuilding"
+          >
+            {{ userStore.currentDepartment || '选择科室' }}
+          </el-button>
+        </div>
+        
         <el-dropdown @command="handleCommand">
           <span class="user-info">
             <el-avatar :size="40" icon="User" />
@@ -61,6 +73,15 @@
         </div>
       </el-main>
     </el-container>
+    
+    <!-- 科室管理弹窗 -->
+    <DepartmentDialog 
+      v-model:visible="showDepartmentDialog"
+      :departments="userStore.departments"
+      :current-department="userStore.currentDepartment"
+      @switch="handleSwitchDepartment"
+      @register="handleRegisterDepartment"
+    />
   </el-container>
 </template>
 
@@ -72,14 +93,17 @@ import {
   ArrowDown, 
   FolderOpened, 
   Share, 
-  View
+  View,
+  OfficeBuilding
 } from '@element-plus/icons-vue'
+import DepartmentDialog from '@/components/DepartmentDialog.vue'
 
 const router = useRouter()
 const userStore = useAuthStore()
 
 const sidebarWidth = ref<string>('240px')
 const isCollapse = ref<boolean>(false)
+const showDepartmentDialog = ref<boolean>(false)
 
 interface MenuItem {
   path: string
@@ -96,11 +120,6 @@ const menuItems = computed((): MenuItem[] => {
         path: '/patient/data',
         title: '我的数据',
         icon: FolderOpened
-      },
-      {
-        path: '/patient/access',
-        title: '访问记录',
-        icon: View
       },
       {
         path: '/patient/authorization',
@@ -142,6 +161,22 @@ const handleCommand = (command: string) => {
       userStore.logout()
       router.push('/auth/login')
       break
+  }
+}
+
+// 切换科室
+const handleSwitchDepartment = async (departmentId: string) => {
+  const success = await userStore.switchDepartment(departmentId)
+  if (success) {
+    showDepartmentDialog.value = false
+  }
+}
+
+// 注册新科室
+const handleRegisterDepartment = async (departmentName: string) => {
+  const success = await userStore.registerNewDepartment(departmentName)
+  if (success) {
+    // 不关闭弹窗，让用户可以继续选择刚注册的科室
   }
 }
 </script>
@@ -207,6 +242,24 @@ const handleCommand = (command: string) => {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.department-switch {
+  margin-right: 8px;
+}
+
+.department-switch .el-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.department-switch .el-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .user-info {

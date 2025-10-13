@@ -4,7 +4,32 @@ export type UserRole = 'patient' | 'doctor'
 // 用户性别枚举
 export type Gender = 'male' | 'female'
 
-// 基础用户信息接口
+// 科室常量枚举
+export const DEPARTMENTS = [
+  '心血管科',
+  '内科',
+  '骨科',
+  '神经科',
+  '外科',
+  '呼吸内科',
+  '消化内科',
+  '泌尿科',
+  '妇产科',
+  '儿科',
+  '内分泌科',
+  '肿瘤科'
+] as const
+
+// 科室类型（从常量数组推导）
+export type Department = typeof DEPARTMENTS[number]
+
+// 科室选项格式（用于 el-select）
+export const DEPARTMENT_OPTIONS = DEPARTMENTS.map(dept => ({
+  label: dept,
+  value: dept
+}))
+
+// 基础用户信息接口（所有用户共有的字段）
 export interface User {
   id: string          // 用户唯一标识
   name: string        // 用户姓名
@@ -13,18 +38,26 @@ export interface User {
   createdAt: string   // 创建时间（数据库自动生成，方便调试）
 }
 
+// 患者已注册科室信息
+export interface PatientDepartment {
+  id: string              // 科室注册记录ID
+  department: string      // 科室名称
+}
+
 // 患者用户扩展信息
 export interface PatientUser extends User {
   role: 'patient'
-  idCard: string  // 身份证号（注册时使用，从中提取姓名、性别、出生日期）
+  idCard: string                    // 身份证号（注册时使用，从中提取姓名、性别、出生日期）
+  currentDepartment: string         // 当前选择的科室（患者特有，可在多个科室间切换）
+  departments: PatientDepartment[]  // 已注册的科室列表（多科室支持）
 }
 
 // 医生用户扩展信息
 export interface DoctorUser extends User {
   role: 'doctor'
   idCard: string      // 身份证号（注册时使用，验证身份）
-  department: string   // 科室（注册时必填）
-  hospital?: string    // 医院（可选）
+  department: string  // 所属科室（注册时绑定，固定不变）
+  hospital?: string   // 医院（可选）
 }
 
 // 登录凭证（仅保留手机号验证码登录）
@@ -43,9 +76,10 @@ export interface RegisterDataBase {
   agreeToTerms: boolean // 是否同意服务条款
 }
 
-// 患者注册数据
+// 患者注册数据（需要填写初始科室）
 export interface PatientRegisterData extends RegisterDataBase {
   role: 'patient'
+  department: string // 初始科室（必填）
 }
 
 // 医生注册数据（需要额外填写科室）
@@ -113,4 +147,14 @@ export interface PaginatedData<T> {
   page: number          // 当前页码（从1开始）
   pageSize: number      // 每页记录数
   totalPages: number    // 总页数
+}
+
+// 切换科室请求数据
+export interface SwitchDepartmentData {
+  departmentId: string  // 要切换到的科室记录ID
+}
+
+// 注册新科室请求数据
+export interface RegisterDepartmentData {
+  department: string    // 科室名称
 }

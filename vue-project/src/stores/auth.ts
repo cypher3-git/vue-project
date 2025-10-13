@@ -1,17 +1,35 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import type { User, LoginCredentials, RegisterData } from '@/types/auth'
-import { authApi } from '@/api'
+import type { 
+  User,
+  PatientUser,
+  DoctorUser,
+  LoginCredentials, 
+  RegisterData,
+  PatientDepartment
+} from '@/types/auth'
+import { authApi, patientApi } from '@/api'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
-  const user = ref<User | null>(null)
+  const user = ref<User | PatientUser | DoctorUser | null>(null)
   const token = ref<string | null>(localStorage.getItem('token'))
   const loading = ref<boolean>(false)
+  const departments = ref<PatientDepartment[]>([]) // 患者已注册的科室列表
 
   // 计算属性
   const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isPatient = computed(() => user.value?.role === 'patient')
+  const isDoctor = computed(() => user.value?.role === 'doctor')
+  const currentDepartment = computed(() => {
+    if (user.value?.role === 'patient') {
+      return (user.value as PatientUser).currentDepartment
+    } else if (user.value?.role === 'doctor') {
+      return (user.value as DoctorUser).department
+    }
+    return undefined
+  })
 
   // 初始化用户信息
   const initUser = async (): Promise<void> => {
@@ -20,6 +38,10 @@ export const useAuthStore = defineStore('auth', () => {
         const response = await authApi.getCurrentUser()
         if (response.success && response.data) {
           user.value = response.data
+          // 如果是患者，加载科室列表
+          if (user.value.role === 'patient') {
+            await loadDepartments()
+          }
         } else {
           logout()
         }
@@ -27,6 +49,18 @@ export const useAuthStore = defineStore('auth', () => {
         // token无效，清除本地存储
         logout()
       }
+    }
+  }
+
+  // 加载患者科室列表
+  const loadDepartments = async (): Promise<void> => {
+    try {
+      const response = await patientApi.getPatientDepartments()
+      if (response.success && response.data) {
+        departments.value = response.data
+      }
+    } catch (error) {
+      console.error('加载科室列表失败:', error)
     }
   }
 
@@ -42,6 +76,11 @@ export const useAuthStore = defineStore('auth', () => {
         
         // 保存token到localStorage
         localStorage.setItem('token', response.data.token)
+        
+        // 如果是患者，加载科室列表
+        if (user.value.role === 'patient') {
+          await loadDepartments()
+        }
         
         ElMessage.success('登录成功！')
       } else {
@@ -90,9 +129,57 @@ export const useAuthStore = defineStore('auth', () => {
     // 清理本地状态
     user.value = null
     token.value = null
+    departments.value = []
     localStorage.removeItem('token')
     
     ElMessage.success('已安全退出')
+  }
+
+  // 注册新科室
+  const registerNewDepartment = async (departmentName: string): Promise<boolean> => {
+    loading.value = true
+    try {
+      const response = await patientApi.registerNewDepartment({ 
+        department: departmentName 
+      })
+      
+      if (response.success && response.data) {
+        // 重新加载科室列表
+        await loadDepartments()
+        ElMessage.success('科室注册成功！')
+        return true
+      } else {
+        throw new Error(response.message || '注册科室失败')
+      }
+    } catch (error: any) {
+      ElMessage.error(error.message || '注册科室失败，请重试')
+      return false
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 切换科室
+  const switchDepartment = async (departmentId: string): Promise<boolean> => {
+    loading.value = true
+    try {
+      const response = await patientApi.switchDepartment({ departmentId })
+      
+      if (response.success) {
+        // 重新加载科室列表和用户信息
+        await loadDepartments()
+        await initUser()
+        ElMessage.success('科室切换成功！')
+        return true
+      } else {
+        throw new Error(response.message || '切换科室失败')
+      }
+    } catch (error: any) {
+      ElMessage.error(error.message || '切换科室失败，请重试')
+      return false
+    } finally {
+      loading.value = false
+    }
   }
 
   // 更新用户信息
@@ -153,18 +240,25 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     loading,
+    departments,
     
     // 计算属性
     isAuthenticated,
+    isPatient,
+    isDoctor,
+    currentDepartment,
     
     // 方法
     initUser,
+    loadDepartments,
     login,
     register,
     logout,
     updateProfile,
     checkTokenExpiration,
-    refreshToken
+    refreshToken,
+    registerNewDepartment,
+    switchDepartment
   }
 })
 

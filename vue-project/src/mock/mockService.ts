@@ -358,6 +358,244 @@ class MockService {
     
     return createMockResponse(newRequest, '授权申请已提交')
   }
+
+  /**
+   * 患者端 - 身份溯源
+   */
+  async traceIdentity(requestId: string) {
+    // 只有演示账户才返回模拟数据
+    if (!MOCK_CONFIG.USE_MOCK_DATA || !isDemoAccount()) return null
+    
+    mockLog('身份溯源', { requestId })
+    await mockDelay()
+    
+    // 查找对应的授权请求
+    const request = mockPatientData.authorizationRequests.find(
+      req => req.id === requestId
+    )
+    
+    if (!request) {
+      return {
+        success: false,
+        message: '授权请求不存在',
+        code: 404
+      }
+    }
+    
+    // 模拟医生详细信息
+    const doctorDetails: { [key: string]: any } = {
+      'D001': {
+        id: 'D001',
+        name: '张医生',
+        hospital: '北京协和医院',
+        department: '心血管科',
+        title: '主任医师',
+        isVerified: true
+      },
+      'D002': {
+        id: 'D002',
+        name: '李医生',
+        hospital: '北京协和医院',
+        department: '呼吸内科',
+        title: '副主任医师',
+        isVerified: true
+      },
+      'D003': {
+        id: 'D003',
+        name: '王医生',
+        hospital: '北京协和医院',
+        department: '内分泌科',
+        title: '主治医师',
+        isVerified: true
+      },
+      'D004': {
+        id: 'D004',
+        name: '赵医生',
+        hospital: '北京协和医院',
+        department: '骨科',
+        title: '主任医师',
+        isVerified: true
+      }
+    }
+    
+    // 获取医生信息
+    const doctor = doctorDetails[request.doctorId] || {
+      id: request.doctorId,
+      name: request.doctorName,
+      hospital: '北京协和医院',
+      department: request.doctorDepartment,
+      title: '主治医师',
+      isVerified: true
+    }
+    
+    // 筛选该医生对该数据的访问记录
+    const accessRecords = mockPatientData.accessRecords
+      .filter(record => 
+        record.doctorName === request.doctorName && 
+        record.dataName === request.dataName
+      )
+      .map(record => ({
+        id: record.id,
+        fileId: record.fileId,
+        doctorId: request.doctorId,
+        patientId: 'P001',
+        accessType: record.operations.includes('下载') ? 'download' : 
+                    record.operations.includes('打印') ? 'preview' : 'view',
+        accessTime: record.accessTime,
+        ipAddress: record.ipAddress,
+        duration: parseInt(record.duration) || 0,
+        doctor: {
+          id: request.doctorId,
+          name: request.doctorName,
+          hospital: doctor.hospital,
+          department: request.doctorDepartment
+        },
+        file: {
+          id: record.fileId,
+          title: record.fileName,
+          fileName: record.fileName,
+          fileType: 'pdf',
+          category: 'report'
+        }
+      }))
+    
+    // 如果没有访问记录，生成一些模拟记录
+    if (accessRecords.length === 0 && request.status === 'approved') {
+      accessRecords.push({
+        id: `access-mock-${Date.now()}`,
+        fileId: request.dataId,
+        doctorId: request.doctorId,
+        patientId: 'P001',
+        accessType: 'view',
+        accessTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleString('zh-CN'),
+        ipAddress: '192.168.1.100',
+        duration: 120,
+        doctor: {
+          id: request.doctorId,
+          name: request.doctorName,
+          hospital: doctor.hospital,
+          department: request.doctorDepartment
+        },
+        file: {
+          id: request.dataId,
+          title: request.dataName,
+          fileName: request.dataName,
+          fileType: 'pdf',
+          category: 'report'
+        }
+      })
+    }
+    
+    return createMockResponse(
+      {
+        doctor,
+        accessRecords,
+        totalAccess: accessRecords.length,
+        lastAccessTime: accessRecords.length > 0 
+          ? accessRecords[0].accessTime 
+          : null
+      },
+      '身份溯源成功'
+    )
+  }
+
+  /**
+   * 医生端 - 患者身份溯源
+   */
+  async traceDoctorPatientIdentity(dataId: string) {
+    // 只有演示账户才返回模拟数据
+    if (!MOCK_CONFIG.USE_MOCK_DATA || !isDemoAccount()) return null
+    
+    mockLog('医生端患者身份溯源', { dataId })
+    await mockDelay()
+    
+    // 查找对应的医疗数据
+    const medicalData = mockDoctorData.accessibleMedicalData.find(
+      data => data.id === dataId
+    )
+    
+    if (!medicalData) {
+      return {
+        success: false,
+        message: '数据不存在',
+        code: 404
+      }
+    }
+    
+    // 检查授权状态
+    if (medicalData.authStatus !== 'authorized') {
+      return {
+        success: false,
+        message: '无权溯源，请先获得患者授权',
+        code: 403
+      }
+    }
+    
+    // 患者信息映射（脱敏处理）
+    const patientInfoMap: { [key: string]: any } = {
+      'P001': {
+        id: 'P001',
+        name: '李阿姨',
+        gender: '女',
+        age: 65,
+        phone: '138****1234',
+        idCard: '320***********5678',
+        registeredDepartment: '心血管科'
+      },
+      'P002': {
+        id: 'P002',
+        name: '王大爷',
+        gender: '男',
+        age: 72,
+        phone: '139****5678',
+        idCard: '320***********9012',
+        registeredDepartment: '心血管科'
+      },
+      'P003': {
+        id: 'P003',
+        name: '张女士',
+        gender: '女',
+        age: 45,
+        phone: '137****9012',
+        idCard: '320***********3456',
+        registeredDepartment: '呼吸内科'
+      },
+      'P004': {
+        id: 'P004',
+        name: '刘先生',
+        gender: '男',
+        age: 58,
+        phone: '136****3456',
+        idCard: '320***********7890',
+        registeredDepartment: '心血管科'
+      }
+    }
+    
+    // 获取患者信息
+    const patient = patientInfoMap[medicalData.patientId] || {
+      id: medicalData.patientId,
+      name: medicalData.patientName,
+      gender: '未知',
+      age: 0,
+      phone: '***********',
+      idCard: '***********',
+      registeredDepartment: '未知'
+    }
+    
+    return createMockResponse(
+      {
+        patient,
+        dataInfo: {
+          id: medicalData.id,
+          name: medicalData.dataName,
+          type: medicalData.dataType,
+          uploadDate: medicalData.uploadDate
+        },
+        traceTime: new Date().toLocaleString('zh-CN')
+      },
+      '患者身份溯源成功'
+    )
+  }
 }
 
 // 导出单例

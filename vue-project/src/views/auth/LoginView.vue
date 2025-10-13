@@ -256,12 +256,7 @@ const fillDemoAccount = async (role: UserRole) => {
       name: role === 'patient' ? '演示患者' : '演示医生',
       role: role,
       phone: role === 'patient' ? '13800138001' : '13800138002',
-      avatar: undefined,
-      isActive: true,
-      isPhoneVerified: true,
-      lastLoginAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date().toISOString()
     }
     
     // 直接设置store状态

@@ -43,7 +43,7 @@
 
 ## 二、数据模型定义
 
-### 2.1 用户模型 (User)
+### 2.1 用户模型 (User) - 基础字段
 
 ```go
 type User struct {
@@ -55,38 +55,72 @@ type User struct {
 }
 ```
 
+**设计说明**：
+- User 接口仅包含所有用户共有的基础字段
+- 科室相关字段分别放在 PatientUser 和 DoctorUser 中，避免冗余
+
 
 ### 2.2 患者用户扩展模型 (PatientUser)
 
 ```go
 type PatientUser struct {
-    UserID    string    `json:"userId" gorm:"primaryKey"`     // 用户ID
-    IDCard    string    `json:"idCard,omitempty" gorm:"unique"` // 身份证号（注册时使用）
-    CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
+    UserID            string              `json:"userId" gorm:"primaryKey"`      // 用户ID
+    IDCard            string              `json:"idCard,omitempty" gorm:"unique"` // 身份证号（注册时使用）
+    CurrentDepartment string              `json:"currentDepartment,omitempty"`   // 当前选择的科室
+    Departments       []PatientDepartment `json:"departments,omitempty" gorm:"-"` // 已注册的科室列表（关联查询）
+    CreatedAt         time.Time           `json:"createdAt" gorm:"autoCreateTime"`
 }
 ```
 
-### 2.3 医生用户扩展模型 (DoctorUser) - 简化版
+**设计说明**：
+- `CurrentDepartment`: 患者当前选择的科室（可在多个科室间切换）
+- `Departments`: 患者已注册的科室列表，通过关联查询 `PatientDepartment` 表获取
+  - 使用 `gorm:"-"` 标记，表示此字段不对应数据库列
+  - 在 API 返回时需要手动查询并填充此字段
+- 患者可以注册多个科室，每个科室在 `PatientDepartment` 表中有一条记录
+
+### 2.3 患者科室关联模型 (PatientDepartment)
+
+```go
+type PatientDepartment struct {
+    ID         string    `json:"id" gorm:"primaryKey"`           // 科室注册记录ID
+    PatientID  string    `json:"patientId" gorm:"not null;index"` // 患者ID
+    Department string    `json:"department" gorm:"not null"`     // 科室名称
+    CreatedAt  time.Time `json:"-" gorm:"autoCreateTime"`        // 注册时间（内部使用）
+}
+```
+
+**设计说明**：
+- 患者可以注册多个科室，每个科室对应一条记录
+- 前端通过比对 `CurrentDepartment` 和 `Department` 判断当前科室
+- 不再维护 `isActive` 字段，简化状态管理
+
+
+### 2.4 医生用户扩展模型 (DoctorUser) - 简化版
 
 ```go
 type DoctorUser struct {
     UserID     string    `json:"userId" gorm:"primaryKey"`        // 用户ID
     IDCard     string    `json:"idCard,omitempty" gorm:"unique"`  // 身份证号（注册时使用，验证身份）
-    Department string    `json:"department" gorm:"not null"`      // 科室（注册时必填）
+    Department string    `json:"department" gorm:"not null"`      // 所属科室（注册时绑定，固定不变）
     Hospital   string    `json:"hospital,omitempty"`              // 医院（可选）
     CreatedAt  time.Time `json:"createdAt" gorm:"autoCreateTime"`
 }
 ```
 
-**简化说明**：
+**设计说明**：
 - 保留 `IDCard`（身份证号）：注册时必填，用于验证医生身份
-- 保留 `Department`（科室）：注册时必填，核心字段
+- 保留 `Department`（科室）：注册时必填，固定不变，不需要额外的 currentDepartment
 - 保留 `Hospital`（医院）：可选，便于识别医生
 - 移除 `LicenseNumber`（执业证号）：认证相关，非核心
 - 移除 `Title`、`Specialties`、`Experience`、`Qualification`：详细信息，非必需
 - 移除 `IsVerified`、`VerifiedAt`：认证功能，基础版不需要
 
-### 2.4 医疗文件模型 (MedicalFile)
+**科室设计对比**：
+- **患者**: 支持多科室，通过 `PatientDepartment` 表管理，`currentDepartment` 指示当前科室
+- **医生**: 单科室绑定，`department` 字段固定，注册时设定后不可变
+
+### 2.5 医疗文件模型 (MedicalFile)
 
 ```go
 type MedicalFile struct {
@@ -124,7 +158,7 @@ type MedicalFile struct {
 - 新增 `AuthorizationCount` 字段记录授权请求数量
 - Category 新增 `medication` 类型（用药记录）
 
-### 2.5 访问记录模型 (AccessRecord)
+### 2.6 访问记录模型 (AccessRecord)
 
 ```go
 type AccessRecord struct {
@@ -145,7 +179,7 @@ type AccessRecord struct {
 - `FileID` 改为 `DataID`（统一使用"数据"概念）
 - `AuthorizationID` 字段记录关联的数据ID（简化后不再有单独的授权记录表）
 
-### 2.6 医生统计数据模型 (DoctorStatistics)
+### 2.7 医生统计数据模型 (DoctorStatistics)
 
 ```go
 type DoctorStatistics struct {
@@ -156,7 +190,7 @@ type DoctorStatistics struct {
 }
 ```
 
-### 2.7 患者统计数据模型 (PatientStatistics)
+### 2.8 患者统计数据模型 (PatientStatistics)
 
 ```go
 type PatientStatistics struct {
@@ -168,7 +202,7 @@ type PatientStatistics struct {
 }
 ```
 
-### 2.8 验证码模型 (VerificationCode)
+### 2.9 验证码模型 (VerificationCode)
 
 ```go
 type VerificationCode struct {
@@ -341,7 +375,7 @@ type VerificationCode struct {
 
 **请求**: `GET /api/auth/me`
 
-**响应**:
+**响应（患者）**:
 ```json
 {
   "code": 200,
@@ -351,13 +385,88 @@ type VerificationCode struct {
     "name": "张三",
     "phone": "13800138000",
     "role": "patient",
-    "avatar": "https://example.com/avatar.jpg",
-    "isActive": true,
-    "isPhoneVerified": true,
-    "lastLoginAt": "2025-10-04T10:30:00Z",
     "createdAt": "2025-01-01T08:00:00Z",
-    "updatedAt": "2025-10-04T10:30:00Z"
+    "currentDepartment": "心血管科",
+    "departments": [
+      {
+        "id": "dept_001",
+        "department": "心血管科"
+      },
+      {
+        "id": "dept_002",
+        "department": "内科"
+      }
+    ]
   }
+}
+```
+
+**响应（医生）**:
+```json
+{
+  "code": 200,
+  "success": true,
+  "data": {
+    "id": "user_def456",
+    "name": "李医生",
+    "phone": "13900139000",
+    "role": "doctor",
+    "createdAt": "2025-01-01T08:00:00Z",
+    "department": "心血管科",
+    "hospital": "某某医院"
+  }
+}
+```
+
+**后端实现示例**:
+```go
+func GetCurrentUser(c *gin.Context) {
+    userID := c.GetString("userID") // 从 JWT 中获取
+    
+    // 1. 查询基础用户信息
+    var user User
+    db.First(&user, "id = ?", userID)
+    
+    // 2. 根据角色查询扩展信息
+    if user.Role == "patient" {
+        var patientUser PatientUser
+        db.First(&patientUser, "user_id = ?", userID)
+        
+        // 3. 查询患者已注册的科室列表
+        var departments []PatientDepartment
+        db.Where("patient_id = ?", userID).Find(&departments)
+        patientUser.Departments = departments
+        
+        // 4. 合并返回
+        c.JSON(200, gin.H{
+            "success": true,
+            "data": gin.H{
+                "id": user.ID,
+                "name": user.Name,
+                "phone": user.Phone,
+                "role": user.Role,
+                "createdAt": user.CreatedAt,
+                "currentDepartment": patientUser.CurrentDepartment,
+                "departments": patientUser.Departments,
+            },
+        })
+    } else if user.Role == "doctor" {
+        var doctorUser DoctorUser
+        db.First(&doctorUser, "user_id = ?", userID)
+        
+        c.JSON(200, gin.H{
+            "success": true,
+            "data": gin.H{
+                "id": user.ID,
+                "name": user.Name,
+                "phone": user.Phone,
+                "role": user.Role,
+                "createdAt": user.CreatedAt,
+                "department": doctorUser.Department,
+                "hospital": doctorUser.Hospital,
+            },
+        })
+    }
 }
 ```
 
