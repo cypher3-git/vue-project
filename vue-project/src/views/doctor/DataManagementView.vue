@@ -204,16 +204,35 @@
     <el-dialog v-model="viewDialogVisible" title="数据详情" width="900px">
       <div v-if="selectedData" class="data-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="数据名称">{{ selectedData.dataName }}</el-descriptions-item>
-          <el-descriptions-item label="数据类型">{{ selectedData.dataType }}</el-descriptions-item>
-          <el-descriptions-item label="上传日期">{{ selectedData.uploadDate }}</el-descriptions-item>
-          <el-descriptions-item label="文件大小">{{ selectedData.fileSize }}</el-descriptions-item>
+          <el-descriptions-item label="数据名称">{{ selectedData.title || selectedData.dataName }}</el-descriptions-item>
+          <el-descriptions-item label="数据类型">{{ MEDICAL_DATA_TYPE_MAP[selectedData.category] || MEDICAL_DATA_TYPE_MAP[selectedData.dataType] || selectedData.dataType || selectedData.category }}</el-descriptions-item>
+          <el-descriptions-item label="上传日期">{{ selectedData.uploadTime || selectedData.uploadDate }}</el-descriptions-item>
+          <el-descriptions-item label="文件大小">{{ formatFileSize(selectedData.fileSize) }}</el-descriptions-item>
           <el-descriptions-item label="授权状态">
             <el-tag :type="getAuthStatusType(selectedData.authStatus)">
               {{ getAuthStatusText(selectedData.authStatus) }}
             </el-tag>
           </el-descriptions-item>
         </el-descriptions>
+        
+        <!-- 患者身份信息 -->
+        <div v-if="selectedData?.authStatus === 'authorized'" class="patient-identity-info">
+          <el-divider>患者身份信息</el-divider>
+          <el-descriptions :column="2" border class="patient-descriptions">
+            <el-descriptions-item label="患者姓名">
+              {{ getDisplayPatientName(selectedData) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="身份证号">
+              {{ getDisplayPatientIdCard(selectedData) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="联系电话">
+              {{ getDisplayPatientPhone(selectedData) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="性别年龄">
+              {{ getDisplayPatientGenderAge(selectedData) }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
         
         <el-divider>数据内容</el-divider>
         
@@ -222,45 +241,20 @@
           <el-empty v-else description="暂无数据内容预览" />
         </div>
 
-        <!-- 患者身份溯源结果展示 -->
-        <div v-if="tracedPatientInfo" class="traced-patient-info">
-          <el-divider>患者身份信息</el-divider>
-          <el-alert
-            title="患者身份溯源成功"
-            type="success"
-            :closable="false"
-            style="margin-bottom: 16px;"
-          >
-            <template #default>
-              溯源时间：{{ tracedPatientInfo.traceTime }}
-            </template>
-          </el-alert>
-          <el-descriptions :column="2" border class="patient-descriptions">
-            <el-descriptions-item label="患者姓名">{{ tracedPatientInfo.patient.name }}</el-descriptions-item>
-            <el-descriptions-item label="患者ID">{{ tracedPatientInfo.patient.id }}</el-descriptions-item>
-            <el-descriptions-item label="性别">{{ tracedPatientInfo.patient.gender }}</el-descriptions-item>
-            <el-descriptions-item label="年龄">{{ tracedPatientInfo.patient.age }} 岁</el-descriptions-item>
-            <el-descriptions-item label="联系电话" v-if="tracedPatientInfo.patient.phone">
-              {{ tracedPatientInfo.patient.phone }}
-            </el-descriptions-item>
-            <el-descriptions-item label="身份证号" v-if="tracedPatientInfo.patient.idCard">
-              {{ tracedPatientInfo.patient.idCard }}
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
       </div>
       
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="viewDialogVisible = false">关闭</el-button>
           <el-button 
-            v-if="!tracedPatientInfo && selectedData?.authStatus === 'authorized'"
-            type="warning" 
+            v-if="selectedData?.authStatus === 'authorized'"
+            :type="selectedData.isPatientIdentityRevealed ? 'info' : 'warning'" 
+            :disabled="selectedData.isPatientIdentityRevealed"
             :loading="isTracing"
-            @click="handleTracePatient"
+            @click="handleRevealPatient"
           >
             <el-icon style="margin-right: 4px;"><UserFilled /></el-icon>
-            患者身份溯源
+            {{ selectedData.isPatientIdentityRevealed ? '已溯源' : '患者身份溯源' }}
           </el-button>
           <el-button type="primary" @click="downloadData">下载数据</el-button>
         </div>
@@ -274,8 +268,9 @@ import { ref, computed, onMounted } from 'vue'
 import { Refresh, Search, Document, Picture, Folder, Files, Plus, Lock, UserFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
-import { tracePatientIdentity } from '@/api/doctor'
-import type { DoctorTracePatientResponse } from '@/types/medicalData'
+import { tracePatientIdentity, revealPatientIdentity } from '@/api/doctor'
+import type { DoctorTracePatientResponse, MedicalFile } from '@/types/medicalData'
+import { maskName, maskIdCard, maskPhone } from '@/utils/privacy'
 import { 
   MEDICAL_DATA_TYPE_OPTIONS,
   MEDICAL_DATA_TYPE_MAP,
@@ -286,7 +281,7 @@ import {
 const loading = ref(false)
 const authDialogVisible = ref(false)
 const viewDialogVisible = ref(false)
-const selectedData = ref<any>(null)
+const selectedData = ref<MedicalFile | any>(null)
 const submitting = ref(false)
 const isTracing = ref(false)
 const tracedPatientInfo = ref<DoctorTracePatientResponse | null>(null)
@@ -505,11 +500,64 @@ const viewData = (data: any) => {
   }
   
   selectedData.value = data
-  tracedPatientInfo.value = null  // 重置溯源信息
   viewDialogVisible.value = true
 }
 
-// 患者身份溯源
+// 格式化文件大小
+const formatFileSize = (size: number | string): string => {
+  if (typeof size === 'string') return size
+  if (size < 1024) return `${size} B`
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+// 获取显示的患者姓名（脱敏/真实）
+const getDisplayPatientName = (data: MedicalFile): string => {
+  if (data.isPatientIdentityRevealed) {
+    return data.patientName || '暂无信息'
+  } else {
+    // 未溯源时，无论是否有数据都显示星号
+    return data.patientName ? maskName(data.patientName) : '***'
+  }
+}
+
+// 获取显示的患者身份证号（脱敏/真实）
+const getDisplayPatientIdCard = (data: MedicalFile): string => {
+  if (data.isPatientIdentityRevealed) {
+    return data.patientIdCard || '暂无信息'
+  } else {
+    // 未溯源时，无论是否有数据都显示星号
+    return data.patientIdCard ? maskIdCard(data.patientIdCard) : '******************'
+  }
+}
+
+// 获取显示的患者手机号（脱敏/真实）
+const getDisplayPatientPhone = (data: MedicalFile): string => {
+  if (data.isPatientIdentityRevealed) {
+    return data.patientPhone || '暂无信息'
+  } else {
+    // 未溯源时，无论是否有数据都显示星号
+    return data.patientPhone ? maskPhone(data.patientPhone) : '***********'
+  }
+}
+
+// 获取显示的患者性别年龄
+const getDisplayPatientGenderAge = (data: MedicalFile): string => {
+  if (data.isPatientIdentityRevealed) {
+    if (!data.patientGender && !data.patientAge) return '暂无信息'
+    const gender = data.patientGender || '未知'
+    const age = data.patientAge ? `${data.patientAge}岁` : '未知'
+    return `${gender} / ${age}`
+  } else {
+    // 未溯源时显示星号，但性别年龄通常不需要脱敏，可以直接显示
+    if (!data.patientGender && !data.patientAge) return '***'
+    const gender = data.patientGender || '未知'
+    const age = data.patientAge ? `${data.patientAge}岁` : '未知'
+    return `${gender} / ${age}`
+  }
+}
+
+// 患者身份溯源（原版本，保留兼容性）
 const handleTracePatient = async () => {
   if (!selectedData.value) return
   
@@ -520,6 +568,36 @@ const handleTracePatient = async () => {
     if (response.success && response.data) {
       tracedPatientInfo.value = response.data
       ElMessage.success('患者身份溯源成功')
+    } else {
+      ElMessage.error(response.message || '患者身份溯源失败')
+    }
+  } catch (error: any) {
+    console.error('患者身份溯源失败:', error)
+    ElMessage.error(error.message || '患者身份溯源失败，请稍后重试')
+  } finally {
+    isTracing.value = false
+  }
+}
+
+// 显示患者真实身份信息（新版本）
+const handleRevealPatient = async () => {
+  if (!selectedData.value) return
+  
+  isTracing.value = true
+  try {
+    const response = await revealPatientIdentity(selectedData.value.id)
+    
+    if (response.success) {
+      // 更新当前选中数据的状态
+      selectedData.value.isPatientIdentityRevealed = true
+      
+      // 同时更新数据列表中对应的项目
+      const dataIndex = dataList.value.findIndex(item => item.id === selectedData.value.id)
+      if (dataIndex !== -1) {
+        dataList.value[dataIndex].isPatientIdentityRevealed = true
+      }
+      
+      ElMessage.success('患者身份信息已显示')
     } else {
       ElMessage.error(response.message || '患者身份溯源失败')
     }

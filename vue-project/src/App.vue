@@ -10,6 +10,7 @@
     
     <!-- 路由视图 -->
     <router-view v-else />
+    
   </div>
 </template>
 
@@ -18,6 +19,7 @@ import { onMounted, ref } from 'vue'
 import '@/styles/main.css'
 
 const isLoading = ref(true)
+
 
 onMounted(async () => {
   try {

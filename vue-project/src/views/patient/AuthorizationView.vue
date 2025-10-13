@@ -53,7 +53,7 @@
         style="width: 100%"
         v-loading="loading"
       >
-        <el-table-column label="请求数据" width="250">
+        <el-table-column label="请求数据" width="200">
           <template #default="scope">
             <div class="data-info">
               <div class="data-name">{{ scope.row.dataName }}</div>
@@ -61,8 +61,24 @@
             </div>
           </template>
         </el-table-column>
+
+        <el-table-column label="医生姓名" width="120">
+          <template #default="scope">
+            <div class="doctor-name">
+              {{ getDisplayName(scope.row) }}
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="医生身份证" width="160">
+          <template #default="scope">
+            <div class="doctor-id-card">
+              {{ getDisplayIdCard(scope.row) }}
+            </div>
+          </template>
+        </el-table-column>
         
-        <el-table-column label="申请理由" min-width="200">
+        <el-table-column label="申请理由" min-width="180">
           <template #default="scope">
             <div class="reason-text">{{ scope.row.reason }}</div>
           </template>
@@ -100,11 +116,12 @@
                   拒绝
                 </el-button>
                 <el-button 
-                  type="warning" 
+                  :type="getIdentityButtonType(scope.row)" 
                   size="small" 
-                  @click="traceIdentity(scope.row)"
+                  :disabled="!canRevealIdentity(scope.row)"
+                  @click="revealIdentity(scope.row)"
                 >
-                  身份溯源
+                  {{ getIdentityButtonText(scope.row) }}
                 </el-button>
               </div>
               <!-- 第二行：详情 -->
@@ -271,112 +288,25 @@
       </template>
     </el-dialog>
 
-    <!-- 身份溯源对话框 -->
-    <el-dialog v-model="traceDialogVisible" title="身份溯源" width="800px">
-      <div v-if="traceData" class="trace-content">
-        <!-- 医生信息 -->
-        <el-card class="doctor-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <el-icon color="#4dd0e1"><User /></el-icon>
-              <span>医生详细信息</span>
-            </div>
-          </template>
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="医生姓名">{{ traceData.doctor.name }}</el-descriptions-item>
-            <el-descriptions-item label="所属医院">{{ traceData.doctor.hospital }}</el-descriptions-item>
-            <el-descriptions-item label="科室">{{ traceData.doctor.department }}</el-descriptions-item>
-            <el-descriptions-item label="职称">{{ traceData.doctor.title }}</el-descriptions-item>
-            <el-descriptions-item label="认证状态" :span="2">
-              <el-tag :type="traceData.doctor.isVerified ? 'success' : 'warning'">
-                {{ traceData.doctor.isVerified ? '已认证' : '未认证' }}
-              </el-tag>
-            </el-descriptions-item>
-          </el-descriptions>
-        </el-card>
-
-        <!-- 访问统计 -->
-        <el-card class="stats-card" shadow="never" style="margin-top: 20px;">
-          <template #header>
-            <div class="card-header">
-              <el-icon color="#4dd0e1"><DataAnalysis /></el-icon>
-              <span>访问统计</span>
-            </div>
-          </template>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <div class="stat-item">
-                <div class="stat-label">总访问次数</div>
-                <div class="stat-value">{{ traceData.totalAccess }}</div>
-              </div>
-            </el-col>
-            <el-col :span="12">
-              <div class="stat-item">
-                <div class="stat-label">最后访问时间</div>
-                <div class="stat-value small">{{ traceData.lastAccessTime || '暂无' }}</div>
-              </div>
-            </el-col>
-          </el-row>
-        </el-card>
-
-        <!-- 访问记录 -->
-        <el-card class="access-records-card" shadow="never" style="margin-top: 20px;">
-          <template #header>
-            <div class="card-header">
-              <el-icon color="#4dd0e1"><Document /></el-icon>
-              <span>访问记录</span>
-            </div>
-          </template>
-          <el-table :data="traceData.accessRecords" style="width: 100%" max-height="300">
-            <el-table-column prop="accessType" label="访问类型" width="100">
-              <template #default="scope">
-                <el-tag size="small" :type="getAccessTypeTag(scope.row.accessType)">
-                  {{ getAccessTypeText(scope.row.accessType) }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="accessTime" label="访问时间" width="180" />
-            <el-table-column prop="duration" label="访问时长" width="100">
-              <template #default="scope">
-                {{ scope.row.duration ? `${scope.row.duration}秒` : '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="ipAddress" label="IP地址" />
-          </el-table>
-          
-          <el-empty 
-            v-if="!traceData.accessRecords || traceData.accessRecords.length === 0"
-            description="暂无访问记录"
-          />
-        </el-card>
-      </div>
-      
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="traceDialogVisible = false">关闭</el-button>
-        </div>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Search, User, DataAnalysis, Document } from '@element-plus/icons-vue'
+import { Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { patientApi } from '@/api'
-import type { TraceIdentityResponse } from '@/types/medicalData'
+import type { AuthorizationRequest } from '@/types/medicalData'
+import { maskName, maskIdCard } from '@/utils/privacy'
 
 // 响应式数据
 const loading = ref(false)
 const detailDialogVisible = ref(false)
 const approveDialogVisible = ref(false)
 const rejectDialogVisible = ref(false)
-const traceDialogVisible = ref(false)
-const selectedRequest = ref<any>(null)
+const selectedRequest = ref<AuthorizationRequest | null>(null)
 const submitting = ref(false)
-const traceData = ref<TraceIdentityResponse | null>(null)
 
 // 筛选条件
 const filters = ref({
@@ -411,7 +341,7 @@ const rejectRules: FormRules = {
 }
 
 // 请求列表
-const requestList = ref<any[]>([])
+const requestList = ref<AuthorizationRequest[]>([])
 
 // 加载授权请求列表
 const loadRequests = async () => {
@@ -479,6 +409,52 @@ const getStatusText = (status: string) => {
     case 'approved': return '已同意'
     case 'rejected': return '已拒绝'
     default: return '未知'
+  }
+}
+
+// 获取显示的医生姓名（脱敏/真实）
+const getDisplayName = (request: AuthorizationRequest): string => {
+  if (request.isIdentityRevealed) {
+    return request.doctorName
+  } else {
+    return maskName(request.doctorName)
+  }
+}
+
+// 获取显示的医生身份证号（脱敏/真实）
+const getDisplayIdCard = (request: AuthorizationRequest): string => {
+  if (request.isIdentityRevealed) {
+    return request.doctorIdCard
+  } else {
+    return maskIdCard(request.doctorIdCard)
+  }
+}
+
+// 判断是否可以进行身份溯源
+const canRevealIdentity = (request: AuthorizationRequest): boolean => {
+  // 只有已同意的授权且未溯源的才可以进行身份溯源
+  return request.status === 'approved' && !request.isIdentityRevealed
+}
+
+// 获取身份溯源按钮类型（颜色）
+const getIdentityButtonType = (request: AuthorizationRequest): string => {
+  if (request.isIdentityRevealed) {
+    return 'info'  // 已溯源：灰色
+  } else if (request.status === 'approved') {
+    return 'warning'  // 可溯源：橙色
+  } else {
+    return 'default'  // 不可溯源：暗灰色
+  }
+}
+
+// 获取身份溯源按钮文本
+const getIdentityButtonText = (request: AuthorizationRequest): string => {
+  if (request.isIdentityRevealed) {
+    return '已溯源'
+  } else if (request.status === 'approved') {
+    return '身份溯源'
+  } else {
+    return '身份溯源'  // 显示相同文本但不可点击
   }
 }
 
@@ -574,20 +550,28 @@ const confirmReject = async () => {
   }
 }
 
-// 身份溯源
-const traceIdentity = async (request: any) => {
+// 显示医生真实身份信息
+const revealIdentity = async (request: AuthorizationRequest) => {
+  // 检查是否可以进行身份溯源
+  if (!canRevealIdentity(request)) {
+    ElMessage.warning('只有已同意的授权才能进行身份溯源')
+    return
+  }
+
   try {
     loading.value = true
     
-    // 调用身份溯源API
-    const response = await patientApi.traceIdentity({
-      requestId: request.id
-    })
+    // 调用简化的身份溯源API
+    const response = await patientApi.revealDoctorIdentity(request.id)
     
-    if (response.success && response.data) {
-      traceData.value = response.data
-      traceDialogVisible.value = true
-      ElMessage.success('身份溯源成功')
+    if (response.success) {
+      // 更新请求对象的状态，显示真实身份信息
+      const index = requestList.value.findIndex(r => r.id === request.id)
+      if (index !== -1) {
+        requestList.value[index].isIdentityRevealed = true
+      }
+      
+      ElMessage.success('医生身份信息已显示')
     } else {
       ElMessage.error(response.message || '身份溯源失败')
     }
@@ -599,25 +583,6 @@ const traceIdentity = async (request: any) => {
   }
 }
 
-// 获取访问类型标签
-const getAccessTypeTag = (type: string) => {
-  switch (type) {
-    case 'view': return 'primary'
-    case 'download': return 'success'
-    case 'preview': return 'info'
-    default: return ''
-  }
-}
-
-// 获取访问类型文本
-const getAccessTypeText = (type: string) => {
-  switch (type) {
-    case 'view': return '查看'
-    case 'download': return '下载'
-    case 'preview': return '预览'
-    default: return type
-  }
-}
 
 // 分页处理
 const handleSizeChange = async (size: number) => {
@@ -773,48 +738,16 @@ onMounted(async () => {
   text-align: right;
 }
 
-/* 身份溯源弹窗样式 */
-.trace-content {
-  padding: 8px 0;
+/* 医生身份信息样式 */
+.doctor-name {
+  font-weight: 500;
+  color: #2c3e50;
 }
 
-.doctor-card,
-.stats-card,
-.access-records-card {
-  border: none !important;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.stat-item {
-  text-align: center;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: #4dd0e1;
-}
-
-.stat-value.small {
-  font-size: 14px;
-  color: #303133;
+.doctor-id-card {
+  font-family: monospace;
+  color: #606266;
+  font-size: 13px;
 }
 
 /* 响应式设计 */

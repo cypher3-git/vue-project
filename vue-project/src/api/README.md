@@ -10,8 +10,7 @@
 | 医疗数据 | `medicalData.ts` | 1 | 患者医疗数据查询 |
 | 医生端 | `doctor.ts` | 4 | 医生数据管理、统计、访问历史、患者身份溯源 |
 | 患者端 | `patient.ts` | 10 | 授权管理、科室管理、身份溯源 |
-| 访问记录 | `access.ts` | 3 | 访问统计、记录查询、导出 |
-| **总计** | - | **25** | - |
+| **总计** | - | **22** | - |
 
 ## 📁 文件说明
 
@@ -110,23 +109,6 @@
 4. 需要切换到未注册科室时，需先注册该科室
 
 ---
-
-### 5. access.ts - 访问记录模块（3个API）
-
-数据访问记录和统计相关接口。
-
-**API列表：**
-- ✅ `getAccessStatistics()` - 获取访问统计信息
-- ✅ `getMyAccessRecords()` - 获取访问记录列表
-- ✅ `exportAccessRecords()` - 导出访问记录
-
-**使用位置：**
-- `views/patient/AccessView.vue` - 访问记录页面
-
-**访问类型：**
-- `view`: 查看数据
-- `download`: 下载数据
-- `preview`: 预览数据
 
 ---
 
@@ -277,7 +259,6 @@ export const useAuthStore = defineStore('auth', () => {
 
 ### 配置文件
 
-模拟数据配置：`src/config/mock.config.ts`
 
 ```typescript
 export const MOCK_CONFIG = {
@@ -439,34 +420,18 @@ export const login = async (credentials: LoginCredentials): Promise<LoginRespons
 ### share.ts（16个，整个文件已删除）
 - ❌ 所有分享相关API
 
-### access.ts（10个）
-- ❌ getDoctorAccessHistory
-- ❌ getAccessRecordById
-- ❌ getFileAccessRecords
-- ❌ getDoctorAccessRecords
-- ❌ recordAccess
-- ❌ getRecentAccessRecords
-- ❌ getAbnormalAccessRecords
-- ❌ getAccessHeatmap
-- ❌ getFileAccessRanking
-
-**删除原因：**
-- 代码中未调用
-- 简化API维护
-- 减少不必要的代码
 
 ---
 
 ## 📚 相关文档
 
 - [API使用情况详细分析](../../API_USAGE_ANALYSIS.md) - 完整的API使用情况报告
-- [Mock数据配置](../config/mock.config.ts) - 模拟数据配置说明
 - [类型定义](../types/) - TypeScript类型定义
 
 ---
 
 **最后更新**: 2025-10-13  
-**API总数**: 25个  
+**API总数**: 22个  
 **文档维护**: 每次API变更后需同步更新此文档
 
 ---

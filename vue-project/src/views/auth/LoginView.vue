@@ -85,14 +85,6 @@
       </div>
     </el-form>
 
-    <!-- 演示账户（仅开发环境） -->
-    <div v-if="showDemoAccounts" class="demo-section">
-      <el-divider>演示账户</el-divider>
-      <div class="demo-buttons">
-        <el-button size="small" @click="fillDemoAccount('patient')">患者演示</el-button>
-        <el-button size="small" @click="fillDemoAccount('doctor')">医生演示</el-button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -118,8 +110,6 @@ const route = useRoute()
 // 表单引用
 const loginFormRef = ref<FormInstance>()
 
-// 是否显示演示账户（仅开发环境）
-const showDemoAccounts = computed(() => import.meta.env.DEV)
 
 // 登录表单数据
 const loginForm = reactive<LoginCredentials>({
@@ -244,36 +234,6 @@ const getDefaultRedirectPath = (): string => {
   return loginForm.role === 'patient' ? '/patient/data' : '/doctor/data'
 }
 
-// 填充演示账户（仅开发环境）
-const fillDemoAccount = async (role: UserRole) => {
-  if (!import.meta.env.DEV) return
-  
-  try {
-    // 模拟登录（避免调用真实API）
-    const mockToken = `demo_token_${role}_${Date.now()}`
-    const mockUser = {
-      id: role === 'patient' ? 'demo_patient_001' : 'demo_doctor_001',
-      name: role === 'patient' ? '演示患者' : '演示医生',
-      role: role,
-      phone: role === 'patient' ? '13800138001' : '13800138002',
-      createdAt: new Date().toISOString()
-    }
-    
-    // 直接设置store状态
-    authStore.token = mockToken
-    authStore.user = mockUser
-    localStorage.setItem('token', mockToken)
-    
-    // 登录成功，跳转到对应的页面
-    const redirectPath = role === 'patient' ? '/patient/data' : '/doctor/data'
-    ElMessage.success(`${role === 'patient' ? '患者' : '医生'}演示登录成功！`)
-    router.push(redirectPath)
-    
-  } catch (error: any) {
-    console.error('演示登录失败:', error)
-    ElMessage.error('演示登录失败')
-  }
-}
 
 // 组件卸载时清理定时器
 onBeforeUnmount(() => {

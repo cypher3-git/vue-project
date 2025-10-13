@@ -232,10 +232,6 @@ npm run preview
   - 发起授权申请
   - 查看授权状态
 
-> **注意**: 
-> - 演示账户使用模拟数据，不会影响真实数据库
-> - 真实注册的账户不会看到模拟数据
-> - 模拟数据配置位于 `src/config/mock.config.ts`
 
 ### 注册新账户
 
@@ -263,7 +259,6 @@ medical-data-traceability/
 │   │   │   ├── medicalData.ts    # 医疗数据 API (1个)
 │   │   │   ├── doctor.ts         # 医生端 API (4个)
 │   │   │   ├── patient.ts        # 患者端 API (10个)
-│   │   │   ├── access.ts         # 访问记录 API (3个)
 │   │   │   ├── index.ts          # API 统一导出
 │   │   │   └── README.md         # API 文档
 │   │   ├── assets/               # 静态资源
@@ -273,12 +268,8 @@ medical-data-traceability/
 │   │   │   ├── forms/           # 表单组件
 │   │   │   └── DepartmentDialog.vue  # 科室管理弹窗
 │   │   ├── config/               # 配置文件
-│   │   │   └── mock.config.ts   # 模拟数据配置
 │   │   ├── layouts/              # 布局组件
 │   │   │   └── AppLayout.vue    # 主布局（含科室切换）
-│   │   ├── mock/                 # 模拟数据
-│   │   │   ├── mockService.ts   # 模拟数据服务
-│   │   │   └── data/            # 模拟数据定义
 │   │   ├── router/               # 路由配置
 │   │   │   └── index.ts         # 路由定义
 │   │   ├── stores/               # Pinia 状态管理

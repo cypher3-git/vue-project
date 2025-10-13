@@ -116,7 +116,6 @@ export const getAuthorizationRequests = async (params?: {
   page?: number
   pageSize?: number
 }): Promise<ApiResponse<PaginatedData<AuthorizationRequest>>> => {
-  // TODO: 集成模拟数据支持
   return request.get('/patient/authorization-requests', { params })
 }
 
@@ -388,10 +387,12 @@ export const revokeAuthorization = async (authorizationId: string): Promise<ApiR
  *   console.log('访问记录:', response.data.accessRecords)
  * }
  */
-export const traceIdentity = async (
-  data: TraceIdentityData
-): Promise<ApiResponse<TraceIdentityResponse>> => {
-  return request.post('/patient/authorization-requests/trace-identity', data)
+export const revealDoctorIdentity = async (
+  requestId: string
+): Promise<ApiResponse> => {
+  return request.post('/patient/authorization-requests/reveal-identity', {
+    requestId
+  })
 }
 
 /**
@@ -621,7 +622,7 @@ export default {
   approveAuthorization,
   rejectAuthorization,
   revokeAuthorization,
-  traceIdentity,
+  revealDoctorIdentity,
   getAuthorizationHistory,
   getPatientDepartments,
   registerNewDepartment,

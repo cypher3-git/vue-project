@@ -79,7 +79,6 @@ import type {
  * 
  * @调用位置:
  * - src/views/patient/DataView.vue (我的数据页面)
- * - 通过 mockService.getPatientFiles() 调用（演示账户使用模拟数据）
  * 
  * @模拟数据说明:
  * - 如果是演示账户登录（token以'demo_token_'开头）

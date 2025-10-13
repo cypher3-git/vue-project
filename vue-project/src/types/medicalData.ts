@@ -77,6 +77,14 @@ export interface MedicalFile {
   // 授权状态信息
   authStatus?: AuthorizationStatus        // 授权状态（核心字段）
   authorizationCount?: number             // 授权请求次数
+  // 患者身份信息（用于医生端脱敏显示）
+  patientName?: string                    // 患者姓名（完整）
+  patientIdCard?: string                  // 患者身份证号（完整）
+  patientPhone?: string                   // 患者手机号（完整）
+  patientGender?: string                  // 患者性别
+  patientAge?: number                     // 患者年龄
+  // 前端状态管理
+  isPatientIdentityRevealed?: boolean     // 是否已显示真实患者身份信息
   // 文件预览信息
   thumbnailUrl?: string                   // 缩略图URL
   previewUrl?: string                     // 预览URL
@@ -141,6 +149,7 @@ export interface FileQueryParams {
   category?: FileCategory                                       // 文件类别（可选）
   keyword?: string                                              // 搜索关键词（可选）
   status?: FileStatus                                           // 文件状态（可选）
+  authStatus?: AuthorizationStatus                              // 授权状态（可选）
   startDate?: string                                            // 开始日期（可选）
   endDate?: string                                              // 结束日期（可选）
   page?: number                                                 // 页码（可选）
@@ -260,18 +269,6 @@ export interface FileUploadResponse {
   message: string           // 提示消息
 }
 
-// 访问记录响应
-// 【用于】GET /api/access-records 访问记录查询接口（响应）
-export interface AccessHistoryResponse {
-  success: boolean          // 是否成功
-  data: {
-    records: AccessRecord[] // 访问记录列表
-    total: number           // 总数
-    page: number            // 当前页码
-    pageSize: number        // 每页数量
-  }
-  message: string           // 提示消息
-}
 
 // ==================== 授权管理类型 ====================
 
@@ -281,21 +278,21 @@ export interface AuthorizationRequest {
   dataId: string                // 数据ID
   dataName: string              // 数据名称
   dataType: string              // 数据类型
-  dataUploadDate: string        // 数据上传时间
-  doctor: {                     // 医生信息
-    id: string
-    name: string
-    hospital: string
-    department: string
-    title: string
-    isVerified: boolean
-  }
+  doctorId: string              // 医生ID
+  doctorName: string            // 医生姓名
+  doctorDepartment: string      // 医生科室
+  doctorHospital: string        // 医生医院
+  doctorIdCard: string          // 医生身份证号（完整）
   reason: string                // 申请理由
+  purpose?: string              // 申请目的
   status: string                // 状态
   requestedAt: string           // 申请时间
   processedAt?: string          // 处理时间
   expiresAt?: string            // 过期时间
   rejectReason?: string         // 拒绝理由
+  notes?: string                // 备注
+  // 前端状态管理
+  isIdentityRevealed?: boolean  // 是否已显示真实身份信息
 }
 
 // 同意授权数据

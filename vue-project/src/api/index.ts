@@ -7,12 +7,6 @@
  * - medicalData: 1个API（医疗数据查询）
  * - doctor: 3个API（医生端功能）
  * - patient: 6个API（患者端功能）
- * - access: 3个API（访问记录）
- * 
- * ❌ 已删除的模块：
- * - share: 16个API（未使用，已删除）
- * 
- * 总计：20个有效API
  */
 
 // 导入各个API模块
@@ -20,15 +14,13 @@ import * as authApi from './auth'
 import * as medicalDataApi from './medicalData'
 import * as doctorApi from './doctor'
 import * as patientApi from './patient'
-import * as accessApi from './access'
 
 // 统一导出
 export {
   authApi,
   medicalDataApi,
   doctorApi,
-  patientApi,
-  accessApi
+  patientApi
 }
 
 // 默认导出所有API
@@ -36,8 +28,7 @@ export default {
   auth: authApi,
   medicalData: medicalDataApi,
   doctor: doctorApi,
-  patient: patientApi,
-  access: accessApi
+  patient: patientApi
 }
 
 /**

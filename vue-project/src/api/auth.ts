@@ -10,12 +10,11 @@ import type {
   RegisterData,
   RegisterResponse,
   User,
-  UpdateProfileData,
   VerificationCode,
   ApiResponse
 } from '@/types/auth'
 
-// ==================== 已使用的API（7个）====================
+// ==================== 已使用的API（6个）====================
 
 /**
  * ✅ 用户登录（手机号验证码登录）
@@ -216,19 +215,7 @@ export const getCurrentUser = async (): Promise<ApiResponse<User>> => {
   return request.get('/auth/profile')
 }
 
-/**
- * ⚠️ 更新用户个人信息（MVP暂不支持）
- * 
- * @description 更新当前登录用户的个人资料
- * 
- * @param profileData - 要更新的个人信息（MVP阶段暂不支持此功能）
- * @returns Promise<ApiResponse<User>> - 更新后的用户信息
- * 
- * @注意: MVP阶段暂不支持此功能，后期扩展时再实现
- */
-export const updateProfile = async (profileData: UpdateProfileData): Promise<ApiResponse<User>> => {
-  return request.put('/auth/profile', profileData)
-}
+
 
 /**
  * ✅ 刷新访问令牌
@@ -364,7 +351,6 @@ export default {
   register,
   logout,
   getCurrentUser,
-  updateProfile,
   refreshToken,
   sendVerificationCode
 }

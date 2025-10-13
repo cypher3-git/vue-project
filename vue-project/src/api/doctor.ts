@@ -82,7 +82,6 @@ import type {
  * 
  * @调用位置:
  * - src/views/doctor/DataManagementView.vue (数据管理页面)
- * - 通过 mockService.getDoctorAccessibleData() 调用（演示账户使用模拟数据）
  * 
  * @权限设计说明:
  * - 未授权数据：医生可以看到数据存在，但看不到所属患者，需先发起授权申请
@@ -189,7 +188,6 @@ export const getMedicalDataList = async (params?: {
  * 
  * @调用位置:
  * - src/views/doctor/DataManagementView.vue (可能在访问历史查看功能中)
- * - 通过 mockService.getDoctorAccessHistory() 调用（演示账户使用模拟数据）
  * 
  * @应用场景:
  * - 医生查看自己的数据访问历史
@@ -323,9 +321,31 @@ export const tracePatientIdentity = async (
   return request.post(`/doctor/medical-data/${dataId}/trace-patient`)
 }
 
+/**
+ * ✅ 医生端简化患者身份溯源
+ * 
+ * @description 医生端简化的患者身份溯源，仅切换前端显示状态
+ * @param dataId 数据ID 
+ * @returns Promise<ApiResponse>
+ * 
+ * @example
+ * ```typescript
+ * const response = await revealPatientIdentity('file_001')
+ * if (response.success) {
+ *   // 前端切换显示真实患者信息
+ * }
+ * ```
+ */
+export const revealPatientIdentity = async (
+  dataId: string
+): Promise<ApiResponse> => {
+  return request.post(`/doctor/medical-data/${dataId}/reveal-patient`)
+}
+
 // 导出所有API函数作为默认对象
 export default {
   getMedicalDataList,
   getAccessHistory,
-  tracePatientIdentity
+  tracePatientIdentity,
+  revealPatientIdentity
 }
