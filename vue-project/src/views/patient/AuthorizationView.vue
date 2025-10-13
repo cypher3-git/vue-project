@@ -367,7 +367,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { patientApi } from '@/api'
 import type { TraceIdentityResponse } from '@/types/medicalData'
-import { mockService } from '@/mock/mockService'
 
 // 响应式数据
 const loading = ref(false)
@@ -418,35 +417,20 @@ const requestList = ref<any[]>([])
 const loadRequests = async () => {
   loading.value = true
   try {
-    // 从 mockService 获取数据（演示账户使用）
-    const mockResponse = await mockService.getPatientAuthorizationRequests()
+    // 调用真实API获取授权请求列表
+    const response = await patientApi.getAuthorizationRequests({
+      status: filters.value.status as any,
+      page: pagination.value.current,
+      pageSize: pagination.value.size
+    })
     
-    if (mockResponse && mockResponse.success) {
-      requestList.value = mockResponse.data.requests
-      pagination.value.total = mockResponse.data.total
+    if (response.success && response.data) {
+      requestList.value = response.data.items || []
+      pagination.value.total = response.data.total || 0
     } else {
-      // 如果不是演示账户，使用真实API
-      // const response = await patientApi.getAuthorizationRequests({...})
-      // requestList.value = response.data.items
-      // pagination.value.total = response.data.total
-      
-      // 临时：使用默认模拟数据
-      requestList.value = [
-        {
-          id: '1',
-          doctorId: 'D001',
-          doctorName: '张医生',
-          doctorDepartment: '心血管科',
-          dataId: 'DATA001',
-          dataName: '血常规检查报告',
-          dataType: '检验报告',
-          reason: '需要查看您的血常规检查结果以评估当前病情发展情况，为后续治疗方案提供参考。',
-          purpose: 'diagnosis',
-          requestedAt: '2024-01-20 14:30:00',
-          status: 'pending'
-        }
-      ]
-      pagination.value.total = requestList.value.length
+      requestList.value = []
+      pagination.value.total = 0
+      ElMessage.warning(response.message || '暂无授权请求数据')
     }
   } catch (error) {
     console.error('加载授权请求列表失败:', error)
@@ -522,8 +506,12 @@ const confirmApprove = async () => {
   try {
     submitting.value = true
     
-    // TODO: 调用 API 同意授权
-    // await patientApi.approveAuthorization(selectedRequest.value.id, approveForm.value)
+    // 调用 API 同意授权
+    await patientApi.approveAuthorization({
+      requestId: selectedRequest.value.id,
+      expiresIn: approveForm.value.expiresIn,
+      notes: approveForm.value.notes
+    })
     
     await new Promise(resolve => setTimeout(resolve, 1000))
     
@@ -564,21 +552,17 @@ const confirmReject = async () => {
     
     submitting.value = true
     
-    // TODO: 调用 API 拒绝授权
-    // await patientApi.rejectAuthorization(selectedRequest.value.id, rejectForm.value)
-    
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // 调用 API 拒绝授权
+    await patientApi.rejectAuthorization({
+      requestId: selectedRequest.value.id,
+      reason: rejectForm.value.reason
+    })
     
     ElMessage.success('已拒绝授权申请')
     rejectDialogVisible.value = false
     
-    // 更新列表中的状态
-    const index = requestList.value.findIndex(r => r.id === selectedRequest.value.id)
-    if (index !== -1) {
-      requestList.value[index].status = 'rejected'
-      requestList.value[index].processedAt = new Date().toLocaleString('zh-CN')
-      requestList.value[index].rejectReason = rejectForm.value.reason
-    }
+    // 重新加载列表
+    await loadRequests()
     
   } catch (error: any) {
     if (error !== 'cancel') {

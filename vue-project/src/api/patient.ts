@@ -18,7 +18,6 @@ import type {
   TraceIdentityData,
   TraceIdentityResponse
 } from '@/types/medicalData'
-import { mockService } from '@/mock/mockService'
 
 // ==================== 已使用的API（6个）====================
 
@@ -392,10 +391,6 @@ export const revokeAuthorization = async (authorizationId: string): Promise<ApiR
 export const traceIdentity = async (
   data: TraceIdentityData
 ): Promise<ApiResponse<TraceIdentityResponse>> => {
-  // 如果启用了模拟数据，返回模拟数据
-  const mockResponse = await mockService.traceIdentity(data.requestId)
-  if (mockResponse) return mockResponse as any
-  
   return request.post('/patient/authorization-requests/trace-identity', data)
 }
 

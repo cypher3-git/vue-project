@@ -1,6 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { mockService } from '@/mock/mockService'
 
 // 创建axios实例
 const request: AxiosInstance = axios.create({
@@ -27,57 +26,6 @@ request.interceptors.request.use(
         params: config.params,
         data: config.data
       })
-    }
-    
-    // Mock数据拦截（仅演示账户）
-    const url = config.url || ''
-    let mockResponse = null
-    
-    // 患者端访问记录
-    if (url.includes('/access/my-records')) {
-      mockResponse = await mockService.getPatientAccessRecords(config.params)
-    }
-    // 访问统计
-    else if (url.includes('/access/statistics')) {
-      mockResponse = await mockService.getAccessStatistics(config.params)
-    }
-    // 患者医疗数据
-    else if (url.includes('/medical-data/files') && config.method === 'get') {
-      mockResponse = await mockService.getPatientFiles(config.params)
-    }
-    // 分享记录
-    else if (url.includes('/share/my-shares')) {
-      mockResponse = await mockService.getMyShares(config.params)
-    }
-    // 创建分享
-    else if (url.includes('/share/create')) {
-      mockResponse = await mockService.createShare(config.data)
-    }
-    // 撤销分享
-    else if (url.includes('/share/') && url.includes('/revoke')) {
-      const shareId = url.split('/')[2]
-      mockResponse = await mockService.revokeShare(shareId)
-    }
-    // 医生端患者列表
-    else if (url.includes('/doctor/patients')) {
-      mockResponse = await mockService.getDoctorPatients(config.params)
-    }
-    
-    // 如果有mock响应，直接返回，不发送真实请求
-    if (mockResponse) {
-      if (import.meta.env.DEV) {
-        console.log(`🎭 使用Mock数据响应: ${config.method?.toUpperCase()} ${config.url}`, mockResponse)
-      }
-      // 创建一个假的config用于触发适配器返回
-      config.adapter = () => {
-        return Promise.resolve({
-          data: mockResponse,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config: config as any
-        })
-      }
     }
     
     return config
