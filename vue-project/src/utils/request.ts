@@ -1,5 +1,9 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import mockBackend from '@/services/mockBackend'
+
+// 是否启用模拟模式（可以通过环境变量控制）
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || true // 默认启用模拟
 
 // 创建axios实例
 const request: AxiosInstance = axios.create({
@@ -9,6 +13,89 @@ const request: AxiosInstance = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+// 模拟API路由映射
+function getMockResponse(config: InternalAxiosRequestConfig): any {
+  const method = config.method?.toUpperCase()
+  const url = config.url || ''
+  const data = config.data
+  const params = config.params
+
+  console.log(`🔄 模拟API请求: ${method} ${url}`, { params, data })
+
+  // 医疗文件相关
+  if (method === 'POST' && url.includes('/medical-data/files/upload')) {
+    return mockBackend.uploadMedicalFile(data)
+  }
+  
+  if (method === 'GET' && url.includes('/medical-data/files')) {
+    return mockBackend.getPatientMedicalFiles(params)
+  }
+  
+  if (method === 'DELETE' && url.includes('/medical-data/files/')) {
+    // 从URL中提取文件ID
+    const fileId = url.split('/').pop()
+    if (fileId) {
+      return mockBackend.deleteMedicalFile(fileId)
+    }
+  }
+
+  // 医生端医疗数据
+  if (method === 'GET' && url.includes('/doctor/medical-data')) {
+    return mockBackend.getDoctorMedicalDataList(params)
+  }
+
+  // 授权请求相关
+  if (method === 'POST' && url.match(/\/doctor\/medical-data\/.*\/request-authorization/)) {
+    const dataId = url.split('/')[3]
+    return mockBackend.requestAuthorization(dataId, data.reason)
+  }
+
+  if (method === 'GET' && url.includes('/patient/authorization-requests')) {
+    return mockBackend.getPatientAuthorizationRequests(params)
+  }
+
+  if (method === 'POST' && url.match(/\/patient\/authorization-requests\/.*\/approve/)) {
+    const requestId = url.split('/')[3]
+    return mockBackend.approveAuthorizationRequest({
+      requestId,
+      expiresIn: data.expiresIn,
+      notes: data.notes
+    })
+  }
+
+  if (method === 'POST' && url.match(/\/patient\/authorization-requests\/.*\/reject/)) {
+    const requestId = url.split('/')[3]
+    return mockBackend.rejectAuthorizationRequest({
+      requestId,
+      reason: data.reason
+    })
+  }
+
+  // 医生查看数据
+  if (method === 'POST' && url.match(/\/doctor\/medical-data\/.*\/view/)) {
+    const dataId = url.split('/')[3]
+    return mockBackend.viewMedicalData(dataId)
+  }
+
+  // 访问记录
+  if (method === 'GET' && url.includes('/access-records')) {
+    return mockBackend.getAccessRecordsList(params)
+  }
+
+  // 身份溯源
+  if (method === 'POST' && url.includes('/patient/authorization-requests/reveal-identity')) {
+    return mockBackend.revealDoctorIdentity(data.requestId)
+  }
+
+  if (method === 'POST' && url.match(/\/doctor\/medical-data\/.*\/reveal-patient/)) {
+    const dataId = url.split('/')[3]
+    return mockBackend.revealPatientIdentity(dataId)
+  }
+
+  // 未匹配的API，返回null表示继续正常请求
+  return null
+}
 
 // 请求拦截器
 request.interceptors.request.use(
@@ -26,6 +113,19 @@ request.interceptors.request.use(
         params: config.params,
         data: config.data
       })
+    }
+
+    // 如果启用模拟模式，尝试使用模拟数据
+    if (USE_MOCK) {
+      const mockResponse = getMockResponse(config)
+      if (mockResponse !== null) {
+        // 返回一个被拒绝的Promise，但携带模拟数据
+        // 这样可以在响应拦截器中捕获并返回模拟数据
+        const error: any = new Error('MOCK_RESPONSE')
+        error.config = config
+        error.mockData = mockResponse
+        return Promise.reject(error)
+      }
     }
     
     return config
@@ -61,7 +161,13 @@ request.interceptors.response.use(
     
     return data
   },
-  async (error: AxiosError) => {
+  async (error: AxiosError | any) => {
+    // 处理模拟响应
+    if (error.message === 'MOCK_RESPONSE' && error.mockData) {
+      console.log('✅ 模拟API响应:', error.mockData)
+      return error.mockData
+    }
+
     // 打印错误信息（开发环境）
     if (import.meta.env.DEV) {
       console.log('❌ 响应错误:', error)
@@ -88,9 +194,9 @@ request.interceptors.response.use(
         // 清除本地token
         localStorage.removeItem('token')
         
-        // 跳转到登录页
+        // 跳转到首页
         setTimeout(() => {
-          window.location.href = '/auth/login'
+          window.location.href = '/'
         }, 1500)
         break
       case 403:

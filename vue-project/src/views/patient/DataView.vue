@@ -36,9 +36,10 @@
             style="width: 150px; margin-right: 16px;"
           >
             <el-option label="全部状态" value="" />
-            <el-option label="无授权请求" value="无授权请求" />
-            <el-option label="待审批" value="待审批" />
-            <el-option label="已授权" value="已授权" />
+            <el-option label="无授权请求" value="not-requested" />
+            <el-option label="待审批" value="pending" />
+            <el-option label="已授权" value="approved" />
+            <el-option label="已拒绝" value="rejected" />
           </el-select>
           
           <el-date-picker
@@ -73,29 +74,40 @@
         style="width: 100%"
         v-loading="loading"
       >
-        <el-table-column prop="name" label="数据名称" width="200">
+        <el-table-column prop="title" label="数据名称" width="200" align="center">
           <template #default="scope">
             <div class="data-name">
               <el-icon class="file-icon">
-                <Document v-if="scope.row.type === '检验报告'" />
-                <Picture v-else-if="scope.row.type === '影像资料'" />
-                <Folder v-else-if="scope.row.type === '病历记录'" />
-                <Files v-else-if="scope.row.type === '体检报告'" />
-                <Files v-else-if="scope.row.type === '用药记录'" />
-                <Document v-else />
+                <Document v-if="scope.row.category === 'lab-report'" />
+                <Picture v-else-if="scope.row.category === 'medical-image'" />
+                <Folder v-else-if="scope.row.category === 'medication'" />
+                <Files v-else-if="scope.row.category === 'physical-exam'" />
+                <Files v-else />
               </el-icon>
-              <span>{{ scope.row.name }}</span>
+              <span>{{ scope.row.title }}</span>
             </div>
           </template>
         </el-table-column>
         
-        <el-table-column prop="type" label="数据类型" width="120" />
+        <el-table-column label="数据类型" width="120" align="center">
+          <template #default="scope">
+            {{ getCategoryLabel(scope.row.category) }}
+          </template>
+        </el-table-column>
         
-        <el-table-column prop="date" label="创建日期" width="120" />
+        <el-table-column label="创建时间" width="160" align="center">
+          <template #default="scope">
+            {{ formatDateTime(scope.row.uploadTime) }}
+          </template>
+        </el-table-column>
         
-        <el-table-column prop="size" label="大小" width="100" />
+        <el-table-column label="大小" width="100" align="center">
+          <template #default="scope">
+            {{ formatFileSize(scope.row.fileSize) }}
+          </template>
+        </el-table-column>
         
-        <el-table-column label="授权状态" width="120">
+        <el-table-column label="授权状态" width="120" align="center">
           <template #default="scope">
             <el-tag 
               :type="getAuthStatusType(scope.row.authStatus)"
@@ -106,9 +118,9 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="description" label="描述" />
+        <el-table-column prop="description" label="描述" align="center" />
         
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right" align="center">
           <template #default="scope">
             <el-button 
               type="text" 
@@ -156,16 +168,15 @@
         <div class="detail-header">
           <div class="data-icon">
             <el-icon size="32">
-              <Document v-if="currentViewData.type === '检验报告'" />
-              <Picture v-else-if="currentViewData.type === '影像资料'" />
-              <Folder v-else-if="currentViewData.type === '病历记录'" />
-              <Files v-else-if="currentViewData.type === '体检报告'" />
-              <Files v-else-if="currentViewData.type === '用药记录'" />
+              <Document v-if="(currentViewData.category || currentViewData.type) === 'lab-report'" />
+              <Picture v-else-if="(currentViewData.category || currentViewData.type) === 'medical-image'" />
+              <Folder v-else-if="(currentViewData.category || currentViewData.type) === 'medication'" />
+              <Files v-else-if="(currentViewData.category || currentViewData.type) === 'physical-exam'" />
               <Document v-else />
             </el-icon>
           </div>
           <div class="data-title">
-            <h3>{{ currentViewData.name }}</h3>
+            <h3>{{ currentViewData.title || currentViewData.name }}</h3>
             <el-tag :type="getAuthStatusType(currentViewData.authStatus)" size="small">
               {{ getAuthStatusText(currentViewData.authStatus) }}
             </el-tag>
@@ -175,23 +186,23 @@
         <el-divider />
         
         <div class="detail-content">
-          <el-descriptions :column="2" border>
-            <el-descriptions-item label="数据类型">
-              <el-tag>{{ currentViewData.type }}</el-tag>
+          <el-descriptions :column="2" border size="small" class="patient-data-descriptions">
+            <el-descriptions-item label="数据类型" class="double-height-row">
+              <el-tag size="small">{{ getCategoryLabel(currentViewData.category || currentViewData.type) }}</el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="文件大小">
-              {{ currentViewData.size }}
+              {{ formatFileSize(currentViewData.fileSize || currentViewData.size) }}
             </el-descriptions-item>
-            <el-descriptions-item label="创建日期">
-              {{ currentViewData.date }}
+            <el-descriptions-item label="创建时间" class="double-height-row">
+              {{ formatDateTime(currentViewData.uploadTime || currentViewData.date) }}
             </el-descriptions-item>
             <el-descriptions-item label="授权状态">
               <el-tag :type="getAuthStatusType(currentViewData.authStatus)" size="small">
                 {{ getAuthStatusText(currentViewData.authStatus) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="描述信息" :span="2">
-              {{ currentViewData.description }}
+            <el-descriptions-item label="描述信息" :span="2" class="double-height-row">
+              {{ currentViewData.description || '暂无描述' }}
             </el-descriptions-item>
           </el-descriptions>
           
@@ -460,6 +471,7 @@ const pagination = ref({
 
 // 表单数据
 const uploadFormRef = ref<FormInstance>()
+const uploadRef = ref<any>()
 const uploadForm = ref({
   name: '',
   type: '',
@@ -544,6 +556,20 @@ const uploadRules: FormRules = {
   ],
   description: [
     { required: true, message: '请输入描述信息', trigger: 'blur' }
+  ],
+  file: [
+    { 
+      required: true, 
+      message: '请选择要上传的文件', 
+      trigger: 'change',
+      validator: (rule, value, callback) => {
+        if (!uploadForm.value.file) {
+          callback(new Error('请选择要上传的文件'))
+        } else {
+          callback()
+        }
+      }
+    }
   ]
 }
 
@@ -556,7 +582,7 @@ const filteredData = computed(() => {
 
   // 按类型筛选
   if (filters.value.type) {
-    result = result.filter(item => item.category === filters.value.type || item.fileType === filters.value.type)
+    result = result.filter(item => item.category === filters.value.type)
   }
 
   // 按授权状态筛选
@@ -568,8 +594,9 @@ const filteredData = computed(() => {
   if (filters.value.keyword) {
     const keyword = filters.value.keyword.toLowerCase()
     result = result.filter(item => 
-      (item.title || item.fileName).toLowerCase().includes(keyword) ||
-      item.description.toLowerCase().includes(keyword)
+      item.title.toLowerCase().includes(keyword) ||
+      item.description.toLowerCase().includes(keyword) ||
+      item.fileName.toLowerCase().includes(keyword)
     )
   }
 
@@ -588,6 +615,7 @@ const filteredData = computed(() => {
 
 // 处理函数
 const showUploadDialog = () => {
+  console.log('📤 打开上传对话框, 当前文件数量:', medicalData.value.length)
   uploadDialogVisible.value = true
   resetUploadForm()
 }
@@ -602,14 +630,31 @@ const resetUploadForm = () => {
     description: '',
     file: null
   }
+  // 清除上传组件的文件列表
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
 }
 
 const handleFileChange = (file: UploadFile) => {
+  console.log('📎 文件选择变化:', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.raw?.type
+  })
   uploadForm.value.file = file
+  // 触发文件字段验证
+  if (uploadFormRef.value) {
+    uploadFormRef.value.validateField('file')
+  }
 }
 
 const handleFileRemove = () => {
   uploadForm.value.file = null
+  // 触发文件字段验证
+  if (uploadFormRef.value) {
+    uploadFormRef.value.validateField('file')
+  }
   return true
 }
 
@@ -622,56 +667,173 @@ const handleTypeChange = () => {
 const handleUpload = async () => {
   if (!uploadFormRef.value) return
   
+  console.log('🚀 开始上传, 表单状态:', {
+    hasFile: !!uploadForm.value.file,
+    fileName: uploadForm.value.file?.name,
+    fileSize: uploadForm.value.file?.size,
+    formData: {
+      name: uploadForm.value.name,
+      type: uploadForm.value.type,
+      description: uploadForm.value.description
+    }
+  })
+  
   try {
     await uploadFormRef.value.validate()
     
-    if (!uploadForm.value.file) {
-      ElMessage.warning('请选择要上传的文件')
-      return
-    }
-    
     // 真实上传
-    const file = uploadForm.value.file.raw as File
+    const file = uploadForm.value.file!.raw as File
     
-    // 映射类型到category
-    const categoryMap: Record<string, any> = {
-      '检验报告': 'report',
-      '影像资料': 'image',
-      '病历记录': 'report',
-      '体检报告': 'report',
-      '用药记录': 'prescription'
+    // 将文件转换为base64或blob URL用于预览
+    let fileData = ''
+    try {
+      // 对于小文件（<5MB），转换为base64保存
+      if (file.size < 5 * 1024 * 1024) {
+        fileData = await fileToBase64(file)
+      } else {
+        // 对于大文件，使用blob URL
+        fileData = URL.createObjectURL(file)
+      }
+    } catch (error) {
+      console.warn('文件数据处理失败，将使用模拟预览:', error)
     }
     
+    // 直接使用uploadForm.value.type作为category，因为MEDICAL_DATA_TYPES中的value已经是正确的FileCategory值
     await medicalDataStore.uploadFile({
       file: file,
       title: uploadForm.value.name,
       description: uploadForm.value.description,
-      category: categoryMap[uploadForm.value.type] || 'other'
+      category: uploadForm.value.type as FileCategory,
+      fileData: fileData
     })
     
     // 关闭对话框并重置表单
     uploadDialogVisible.value = false
-    uploadFormRef.value.resetFields()
-    uploadForm.value.file = null
+    resetUploadForm()
     
     // 重新加载数据
     await medicalDataStore.getFiles()
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('上传失败:', error)
+    ElMessage.error(error?.message || '上传失败，请稍后重试')
   }
 }
 
+// 将文件转换为base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      resolve(reader.result as string)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 const viewData = (row: any) => {
-  currentViewData.value = row
+  // 处理数据字段映射和文件类型检测
+  const processedData = {
+    ...row,
+    // 确保字段兼容性
+    name: row.title || row.name,
+    type: getCategoryLabel(row.category || row.type),
+    size: formatFileSize(row.fileSize || row.size),
+    date: formatDate(row.uploadTime || row.date),
+    // 根据文件扩展名判断文件类型
+    fileType: getFileType(row.fileName || row.filePath || ''),
+    // 生成预览所需的数据
+    previewUrl: generatePreviewUrl(row)
+  }
+  
+  currentViewData.value = processedData
   viewDialogVisible.value = true
   
   // 重置预览状态
   resetPreviewState()
   
   // 如果是PDF，预加载获取总页数
-  if (row.fileType === 'pdf') {
-    loadPdfInfo(row)
+   if (processedData.fileType === 'pdf') {
+    loadPdfInfo(processedData)
+  }
+}
+
+// 根据文件名判断文件类型
+const getFileType = (fileName: string): string => {
+  if (!fileName) return 'unknown'
+  
+  const extension = fileName.toLowerCase().split('.').pop()
+  
+  switch (extension) {
+    case 'pdf':
+      return 'pdf'
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'bmp':
+    case 'webp':
+      return 'image'
+    case 'doc':
+    case 'docx':
+      return 'document'
+    case 'txt':
+      return 'text'
+    default:
+      return 'unknown'
+  }
+}
+
+// 生成预览URL
+const generatePreviewUrl = (data: any): string => {
+  // 模拟文件预览URL
+  const category = data.category || data.type
+  const fileName = data.fileName || data.filePath
+  
+  if (!fileName) {
+    return getPlaceholderUrl(category)
+  }
+  
+  // 根据类别和文件类型生成模拟预览URL
+  const fileType = getFileType(fileName)
+  
+  if (fileType === 'image') {
+    // 使用更可靠的图片服务，确保图片能正常加载
+    const imageUrls = [
+      // 医学影像类
+      'https://picsum.photos/600/400?random=1',
+      'https://picsum.photos/600/400?random=2', 
+      'https://picsum.photos/600/400?random=3',
+      'https://picsum.photos/600/400?random=4',
+      'https://picsum.photos/600/400?random=5'
+    ]
+    
+    // 根据fileId或文件名选择一个固定的图片
+    const index = Math.abs((data.id || fileName).split('').reduce((a: number, b: string) => a + b.charCodeAt(0), 0)) % imageUrls.length
+    return imageUrls[index]
+  } else if (fileType === 'pdf') {
+    // 使用可靠的PDF测试文件
+    return 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf'
+  }
+  
+  return getPlaceholderUrl(category)
+}
+
+// 获取占位符URL
+const getPlaceholderUrl = (category: string): string => {
+  // 使用picsum作为占位图，更可靠
+  switch (category) {
+    case 'medical-image':
+      return 'https://picsum.photos/600/400?random=medical'
+    case 'lab-report':
+      return 'https://picsum.photos/600/400?random=lab'
+    case 'medication':
+      return 'https://picsum.photos/600/400?random=med'
+    case 'physical-exam':
+      return 'https://picsum.photos/600/400?random=exam'
+    default:
+      return 'https://picsum.photos/600/400?random=default'
   }
 }
 
@@ -689,35 +851,39 @@ const resetPreviewState = () => {
 
 // 获取文件预览URL
 const getFilePreviewUrl = (data: any) => {
-  if (!data || !data.filePath) {
-    return getPlaceholderImage(data?.fileType || 'unknown')
+  // 优先使用用户上传的真实文件数据
+  if (data?.isUploaded) {
+    // 使用filePreviewUrl或filePath（真实的文件数据）
+    if (data.filePreviewUrl) {
+      return data.filePreviewUrl
+    }
+    if (data.filePath) {
+      return data.filePath
+    }
   }
   
-  // 如果是用户上传的文件，直接返回blob URL
-  if (data.isUploaded) {
-    return data.filePath
+  // 优先使用处理后的previewUrl
+  if (data?.previewUrl) {
+    return data.previewUrl
   }
   
-  // 预设数据的模拟URL映射
-  const mockUrls = {
-    '/api/files/blood-test-report.pdf': 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    '/api/files/ecg-report.pdf': 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    '/api/images/chest-xray.jpg': 'https://via.placeholder.com/600x400/4a90e2/ffffff?text=胸部X光片',
-    '/api/files/liver-function-report.pdf': 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    '/api/files/full-medical-checkup.pdf': 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    '/api/files/medication-history.txt': data.filePath
-  }
-  
-  return mockUrls[data.filePath as keyof typeof mockUrls] || getPlaceholderImage(data.fileType)
+  // fallback到模拟预览
+  return generatePreviewUrl(data)
 }
 
 // 获取文本内容
 const getTextContent = (data: any) => {
-  // 在真实项目中，这里应该从后端获取文本内容
-  const mockTextContent = {
-    '用药历史记录': `用药记录详情：
+  // 根据数据类型和名称生成模拟文本内容
+  const category = data.category || data.type
+  const title = data.title || data.name
+  
+  // 根据不同类别生成不同的文本内容
+  switch (category) {
+    case 'medication':
+      return `【${title}】
 
-时间：2023年7月-2024年1月
+用药记录详情：
+时间：${formatDateTime(data.uploadTime || data.date)}
 
 常用药物：
 1. 阿司匹林 100mg - 每日1次，餐后服用
@@ -725,23 +891,61 @@ const getTextContent = (data: any) => {
    
 2. 美托洛尔 25mg - 每日2次，早晚服用
    适应症：高血压控制
-   
-3. 瑞舒伐他汀 10mg - 每晚1次
-   适应症：调节血脂
-   
-4. 氯吡格雷 75mg - 每日1次
-   适应症：抗血小板聚集
 
 用药注意事项：
 - 规律服药，不可随意停药
 - 定期复查相关指标
 - 如有不良反应及时就医
 
-医师签名：张医生
-日期：2024年1月15日`
+记录日期：${new Date().toLocaleDateString('zh-CN')}`
+
+    case 'lab-report':
+      return `【${title}】
+
+检验报告摘要：
+检验时间：${formatDateTime(data.uploadTime || data.date)}
+
+主要指标：
+- 白细胞计数：正常范围内
+- 红细胞计数：正常范围内  
+- 血红蛋白：正常范围内
+- 血小板计数：正常范围内
+
+检验结论：
+各项指标均在正常范围内，建议定期复查。
+
+报告生成时间：${new Date().toLocaleDateString('zh-CN')}`
+
+    case 'physical-exam':
+      return `【${title}】
+
+体检报告摘要：
+体检时间：${formatDateTime(data.uploadTime || data.date)}
+
+基本信息：
+- 身高：170cm
+- 体重：65kg
+- 血压：120/80mmHg
+- 心率：72次/分
+
+检查结论：
+各项指标基本正常，建议保持良好的生活习惯。
+
+报告日期：${new Date().toLocaleDateString('zh-CN')}`
+
+    default:
+      return `【${title}】
+
+文档内容摘要：
+创建时间：${formatDateTime(data.uploadTime || data.date)}
+文件大小：${formatFileSize(data.fileSize || data.size)}
+
+${data.description || '这是一份医疗相关的文档文件，包含重要的健康信息。'}
+
+备注：此为文本预览内容，完整信息请下载文件查看。
+
+生成时间：${new Date().toLocaleDateString('zh-CN')}`
   }
-  
-  return mockTextContent[data.name as keyof typeof mockTextContent] || '暂无文本内容'
 }
 
 // 图片操作函数
@@ -887,6 +1091,51 @@ const formatFileSize = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
+// 辅助函数：获取类别标签
+const getCategoryLabel = (category: string) => {
+  // 使用标准的 MEDICAL_DATA_TYPE_MAP
+  return MEDICAL_DATA_TYPE_MAP[category as FileCategory] || '未知类型'
+}
+
+// 辅助函数：格式化日期
+const formatDate = (dateString: string) => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+  } catch {
+    return dateString
+  }
+}
+
+// 辅助函数：格式化日期时间（包含时分秒）
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    const dateStr = date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\//g, '-')
+    
+    const timeStr = date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    
+    return `${dateStr} ${timeStr}`
+  } catch {
+    return dateString
+  }
+}
+
 // 辅助函数：获取占位符图片
 const getPlaceholderImage = (fileType: string) => {
   const placeholders = {
@@ -994,16 +1243,22 @@ const downloadFromUrl = async (url: string, filename: string) => {
 // 授权状态相关辅助函数
 const getAuthStatusType = (status: string) => {
   switch (status) {
-    case '无授权请求': return 'info'
-    case '待审批': return 'warning'
-    case '已授权': return 'success'
-    case '已拒绝': return 'danger'
+    case 'not-requested': return 'info'
+    case 'pending': return 'warning'
+    case 'approved': return 'success'
+    case 'rejected': return 'danger'
     default: return 'info'
   }
 }
 
 const getAuthStatusText = (status: string) => {
-  return status || '无授权请求'
+  switch (status) {
+    case 'not-requested': return '无授权请求'
+    case 'pending': return '待审批'
+    case 'approved': return '已授权'
+    case 'rejected': return '已拒绝'
+    default: return '无授权请求'
+  }
 }
 
 const deleteData = async (row: any) => {
@@ -1018,8 +1273,10 @@ const deleteData = async (row: any) => {
       }
     )
     
+    console.log('🗑️ 删除文件:', { fileId: row.id, fileName: row.title || row.name })
     await medicalDataStore.deleteFile(row.id)
     await medicalDataStore.getFiles()
+    console.log('✅ 删除完成, 剩余文件数量:', medicalData.value.length)
     
   } catch (error: any) {
     if (error !== 'cancel') {
@@ -1075,7 +1332,11 @@ onMounted(async () => {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
+  padding-bottom: 340px; /* 为操作记录面板留出空间，320px + 20px间距 */
+  box-sizing: border-box;
+  transition: padding-bottom 0.3s ease; /* 平滑过渡 */
 }
+
 
 /* 允许输入框和文本区域内文本选择 */
 .patient-data :deep(input),
@@ -1230,6 +1491,49 @@ onMounted(async () => {
 
 .detail-content {
   margin-top: 20px;
+}
+
+/* 优化数据详情对话框的舒适布局 */
+:deep(.detail-content .el-descriptions) {
+  .el-descriptions__label {
+    text-align: center;
+    font-weight: 600;
+    color: #606266;
+    background-color: #f5f7fa;
+    width: 100px;
+    padding: 12px 16px !important;
+    font-size: 14px;
+  }
+  
+  .el-descriptions__content {
+    text-align: center;
+    padding: 12px 16px !important;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  /* 让标签和状态信息居中显示 */
+  .el-tag {
+    margin: 0 auto;
+  }
+  
+  /* 适度的表格间距 */
+  .el-descriptions__table {
+    margin: 0;
+  }
+  
+  .el-descriptions__cell {
+    padding: 0 !important;
+  }
+}
+
+/* 描述信息行的特殊样式 */
+:deep(.detail-content .el-descriptions__row:last-child) {
+  .el-descriptions__content {
+    text-align: left;
+    padding: 12px 16px !important;
+    line-height: 1.6;
+  }
 }
 
 /* 文件预览样式 */
@@ -1511,6 +1815,85 @@ onMounted(async () => {
   
   .filter-right {
     justify-content: stretch;
+  }
+}
+
+/* 表格样式优化 - 数据居中显示 */
+:deep(.el-table) {
+  .el-table__cell {
+    text-align: center !important;
+  }
+  
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+  }
+}
+
+.data-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 患者数据详情对话框前三行适中行高样式 */
+.patient-data-descriptions :deep(.double-height-row .el-descriptions__label),
+.patient-data-descriptions :deep(.double-height-row .el-descriptions__content) {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  line-height: 1.5 !important;
+  min-height: 48px !important;
+}
+
+/* 更具体的选择器确保样式生效 */
+:deep(.el-descriptions.patient-data-descriptions .double-height-row) .el-descriptions__label,
+:deep(.el-descriptions.patient-data-descriptions .double-height-row) .el-descriptions__content {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  line-height: 1.5 !important;
+  min-height: 48px !important;
+}
+
+/* 针对跨列的描述信息行 */
+:deep(.el-descriptions.patient-data-descriptions .double-height-row[colspan="2"]) .el-descriptions__label,
+:deep(.el-descriptions.patient-data-descriptions .double-height-row[colspan="2"]) .el-descriptions__content {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  line-height: 1.5 !important;
+  min-height: 48px !important;
+}
+
+/* 最强优先级选择器 - 通过tr和td直接选择 */
+:deep(.patient-data-descriptions tr:nth-child(1) td),
+:deep(.patient-data-descriptions tr:nth-child(2) td),
+:deep(.patient-data-descriptions tr:nth-child(3) td) {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  line-height: 1.5 !important;
+  min-height: 48px !important;
+}
+
+/* 备用方法 - 通过表格行选择器 */
+:deep(.patient-data-descriptions tbody tr:nth-child(1) .el-descriptions__label),
+:deep(.patient-data-descriptions tbody tr:nth-child(1) .el-descriptions__content),
+:deep(.patient-data-descriptions tbody tr:nth-child(2) .el-descriptions__label), 
+:deep(.patient-data-descriptions tbody tr:nth-child(2) .el-descriptions__content),
+:deep(.patient-data-descriptions tbody tr:nth-child(3) .el-descriptions__label),
+:deep(.patient-data-descriptions tbody tr:nth-child(3) .el-descriptions__content) {
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  line-height: 1.5 !important;
+  min-height: 48px !important;
+}
+
+/* 响应式设计 - 移动端调整操作记录面板间距 */
+@media (max-width: 768px) {
+  .patient-data {
+    padding: 16px;
+    padding-bottom: 300px; /* 为移动端操作记录面板留出空间，280px + 20px间距 */
   }
 }
 </style>

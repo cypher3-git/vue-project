@@ -102,6 +102,7 @@ export interface UploadData {
   title: string                 // 文件标题
   description: string           // 文件描述
   category: FileCategory        // 文件类别
+  fileData?: string             // 文件的base64数据或blob URL（用于预览）
 }
 
 // 文件更新数据

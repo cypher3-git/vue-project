@@ -252,13 +252,20 @@ const sendSmsCode = async () => {
   try {
     isCodeSending.value = true
     
-    await authApi.sendVerificationCode({
-      type: 'phone',
-      phone: registerForm.phone,
-      purpose: 'register'
-    })
-    
-    ElMessage.success('验证码已发送，请注意查收')
+    // 开发环境模拟发送，生产环境调用真实API
+    if (import.meta.env.DEV) {
+      // 模拟网络延迟
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log(`📱 模拟发送注册验证码到 ${registerForm.phone}`)
+      ElMessage.success('验证码已发送，请注意查收')
+    } else {
+      await authApi.sendVerificationCode({
+        type: 'phone',
+        phone: registerForm.phone,
+        purpose: 'register'
+      })
+      ElMessage.success('验证码已发送，请注意查收')
+    }
     
     // 开始倒计时
     startCountdown()

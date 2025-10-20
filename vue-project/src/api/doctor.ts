@@ -342,10 +342,50 @@ export const revealPatientIdentity = async (
   return request.post(`/doctor/medical-data/${dataId}/reveal-patient`)
 }
 
+/**
+ * ✅ 医生发起授权请求
+ * 
+ * @description 医生对患者的医疗数据发起访问授权请求
+ * 
+ * @param dataId - 医疗数据ID
+ * @param reason - 申请理由
+ * 
+ * @returns Promise<ApiResponse> - 申请结果
+ * 
+ * @example
+ * const response = await requestAuthorization('file-123', '需要查看患者病历以便诊断')
+ */
+export const requestAuthorization = async (
+  dataId: string,
+  reason: string
+): Promise<ApiResponse> => {
+  return request.post(`/doctor/medical-data/${dataId}/request-authorization`, { reason })
+}
+
+/**
+ * ✅ 医生查看医疗数据
+ * 
+ * @description 医生查看已授权的医疗数据，并记录访问日志
+ * 
+ * @param dataId - 医疗数据ID
+ * 
+ * @returns Promise<ApiResponse<MedicalFile>> - 医疗数据详情
+ * 
+ * @example
+ * const response = await viewMedicalData('file-123')
+ */
+export const viewMedicalData = async (
+  dataId: string
+): Promise<ApiResponse<MedicalFile>> => {
+  return request.post(`/doctor/medical-data/${dataId}/view`)
+}
+
 // 导出所有API函数作为默认对象
 export default {
   getMedicalDataList,
   getAccessHistory,
   tracePatientIdentity,
-  revealPatientIdentity
+  revealPatientIdentity,
+  requestAuthorization,
+  viewMedicalData
 }

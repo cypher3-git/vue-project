@@ -46,82 +46,112 @@
       </div>
     </el-card>
 
-    <!-- 授权请求列表 -->
-    <el-card class="request-list-card">
-      <el-table 
-        :data="filteredRequests" 
-        style="width: 100%"
-        v-loading="loading"
-      >
-        <el-table-column label="请求数据" width="200">
-          <template #default="scope">
-            <div class="data-info">
-              <div class="data-name">{{ scope.row.dataName }}</div>
-              <el-tag size="small" type="info">{{ scope.row.dataType }}</el-tag>
-            </div>
-          </template>
-        </el-table-column>
+    <!-- 统计信息 -->
+    <el-card class="stats-card">
+      <div class="stats-row">
+        <div class="stats-left">
+          <h3 class="view-title">授权申请管理</h3>
+        </div>
+        <div class="stats-right">
+          <el-tag type="info" size="small">
+            共 {{ totalDataCount }} 份数据，{{ filteredRequests.length }} 个申请
+          </el-tag>
+        </div>
+      </div>
+    </el-card>
 
-        <el-table-column label="医生姓名" width="120">
-          <template #default="scope">
-            <div class="doctor-name">
-              {{ getDisplayName(scope.row) }}
+    <!-- 数据分组视图 -->
+    <el-card class="grouped-view-card">
+      <div v-for="group in groupedRequests" :key="group.dataId" class="data-group">
+        <!-- 数据组头部 -->
+        <div class="group-header" @click="toggleGroup(group.dataId)">
+          <div class="group-info">
+            <div class="data-title">
+              <el-icon class="expand-icon" :class="{ expanded: group.expanded }">
+                <ArrowRight />
+              </el-icon>
+              <span class="data-name">{{ group.dataName }}</span>
+              <el-tag size="small" type="info">{{ getDataTypeLabel(group.dataType) }}</el-tag>
             </div>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="医生身份证" width="160">
-          <template #default="scope">
-            <div class="doctor-id-card">
-              {{ getDisplayIdCard(scope.row) }}
+            <div class="group-stats">
+              <el-tag v-if="group.pendingCount > 0" type="warning" size="small">
+                {{ group.pendingCount }} 个待处理
+              </el-tag>
+              <el-tag v-if="group.approvedCount > 0" type="success" size="small">
+                {{ group.approvedCount }} 个已同意
+              </el-tag>
+              <el-tag v-if="group.rejectedCount > 0" type="danger" size="small">
+                {{ group.rejectedCount }} 个已拒绝
+              </el-tag>
             </div>
-          </template>
-        </el-table-column>
+          </div>
+          <div class="group-actions">
+            </div>
+        </div>
         
-        <el-table-column label="申请理由" min-width="180">
-          <template #default="scope">
-            <div class="reason-text">{{ scope.row.reason }}</div>
-          </template>
-        </el-table-column>
-        
-        <el-table-column prop="requestedAt" label="申请时间" width="160" />
-        
-        <el-table-column label="状态" width="100" align="center">
-          <template #default="scope">
-            <el-tag :type="getStatusType(scope.row.status)" size="small">
-              {{ getStatusText(scope.row.status) }}
+        <!-- 展开的医生申请列表 -->
+        <div v-show="group.expanded" class="group-content">
+          <!-- 表头 -->
+          <div class="group-table-header">
+            <div class="header-col header-doctor-name">医生姓名</div>
+            <div class="header-col header-doctor-id">医生身份证号</div>
+            <div class="header-col header-reason">申请理由</div>
+            <div class="header-col header-purpose">使用目的</div>
+            <div class="header-col header-status">状态</div>
+            <div class="header-col header-actions">操作</div>
+            </div>
+          
+          <!-- 医生申请行 -->
+          <div v-for="request in group.requests" :key="request.id" class="doctor-request-item">
+            <div class="item-col col-doctor-name" data-label="医生姓名：">
+              <div class="doctor-name">{{ getDisplayName(request) }}</div>
+            </div>
+            
+            <div class="item-col col-doctor-id" data-label="身份证号：">
+              <div class="doctor-id-card">{{ getDisplayIdCard(request) }}</div>
+            </div>
+            
+            <div class="item-col col-reason" data-label="申请理由：">
+              <div class="reason-text">{{ getRequestReasonOnly(request.reason) }}</div>
+            </div>
+            
+            <div class="item-col col-purpose" data-label="使用目的：">
+              <div class="purpose-text">{{ getRequestPurpose(request.reason, request.purpose) }}</div>
+            </div>
+            
+            <div class="item-col col-status" data-label="状态：">
+              <el-tag :type="getStatusType(request.status)" size="small">
+                {{ getStatusText(request.status) }}
             </el-tag>
-          </template>
-        </el-table-column>
+            </div>
         
-        <el-table-column label="操作" width="280" fixed="right" align="center">
-          <template #default="scope">
+            <div class="item-col col-actions">
             <div class="action-buttons">
               <!-- 第一行：同意/拒绝/身份溯源 -->
               <div class="action-row">
                 <el-button 
-                  v-if="scope.row.status === 'pending'"
+                    v-if="request.status === 'pending'"
                   type="success" 
                   size="small" 
-                  @click="approveRequest(scope.row)"
+                    @click="approveRequest(request)"
                 >
-                  同意
+                  同意并支付
                 </el-button>
                 <el-button 
-                  v-if="scope.row.status === 'pending'"
+                    v-if="request.status === 'pending'"
                   type="danger" 
                   size="small" 
-                  @click="rejectRequest(scope.row)"
+                    @click="rejectRequest(request)"
                 >
                   拒绝
                 </el-button>
                 <el-button 
-                  :type="getIdentityButtonType(scope.row)" 
+                    :type="getIdentityButtonType(request)" 
                   size="small" 
-                  :disabled="!canRevealIdentity(scope.row)"
-                  @click="revealIdentity(scope.row)"
+                    :disabled="!canRevealIdentity(request)"
+                    @click="revealIdentity(request)"
                 >
-                  {{ getIdentityButtonText(scope.row) }}
+                    {{ getIdentityButtonText(request) }}
                 </el-button>
               </div>
               <!-- 第二行：详情 -->
@@ -129,29 +159,23 @@
                 <el-button 
                   type="text" 
                   size="small" 
-                  @click="viewDetail(scope.row)"
+                    @click="viewDetail(request)"
                 >
                   详情
                 </el-button>
               </div>
             </div>
-          </template>
-        </el-table-column>
-      </el-table>
+            </div>
+          </div>
+        </div>
+      </div>
       
-      <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <el-pagination
-          v-model:current-page="pagination.current"
-          v-model:page-size="pagination.size"
-          :page-sizes="[10, 20, 50]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+      <!-- 空状态 -->
+      <div v-if="groupedRequests.length === 0" class="empty-state">
+        <el-empty description="暂无授权申请" />
       </div>
     </el-card>
+
 
     <!-- 授权详情对话框 -->
     <el-dialog v-model="detailDialogVisible" title="授权请求详情" width="700px">
@@ -166,11 +190,11 @@
         
         <el-descriptions :column="2" border>
           <el-descriptions-item label="请求数据">{{ selectedRequest.dataName }}</el-descriptions-item>
-          <el-descriptions-item label="数据类型">{{ selectedRequest.dataType }}</el-descriptions-item>
-          <el-descriptions-item label="申请时间" :span="2">{{ selectedRequest.requestedAt }}</el-descriptions-item>
-          <el-descriptions-item label="使用目的" :span="2">{{ selectedRequest.purpose }}</el-descriptions-item>
+          <el-descriptions-item label="数据类型">{{ getDataTypeLabel(selectedRequest.dataType) }}</el-descriptions-item>
+          <el-descriptions-item label="申请时间">{{ formatDetailDateTime(selectedRequest.requestedAt) }}</el-descriptions-item>
+          <el-descriptions-item label="使用目的">{{ getRequestPurpose(selectedRequest.reason, selectedRequest.purpose) }}</el-descriptions-item>
           <el-descriptions-item label="申请理由" :span="2">
-            {{ selectedRequest.reason }}
+            {{ getRequestReasonOnly(selectedRequest.reason) }}
           </el-descriptions-item>
           <el-descriptions-item label="请求状态">
             <el-tag :type="getStatusType(selectedRequest.status)">
@@ -178,7 +202,7 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="处理时间" v-if="selectedRequest.processedAt">
-            {{ selectedRequest.processedAt }}
+            {{ formatDetailDateTime(selectedRequest.processedAt) }}
           </el-descriptions-item>
         </el-descriptions>
         
@@ -200,7 +224,7 @@
             type="success" 
             @click="approveRequest(selectedRequest)"
           >
-            同意授权
+            同意并支付
           </el-button>
           <el-button 
             v-if="selectedRequest && selectedRequest.status === 'pending'"
@@ -214,7 +238,7 @@
     </el-dialog>
 
     <!-- 同意授权对话框 -->
-    <el-dialog v-model="approveDialogVisible" title="同意授权" width="500px">
+    <el-dialog v-model="approveDialogVisible" title="同意授权并支付" width="500px">
       <div v-if="selectedRequest" class="approve-content">
         <el-alert
           title="提示"
@@ -249,7 +273,7 @@
         <div class="dialog-footer">
           <el-button @click="approveDialogVisible = false">取消</el-button>
           <el-button type="success" @click="confirmApprove" :loading="submitting">
-            确认授权
+            确认授权并支付
           </el-button>
         </div>
       </template>
@@ -293,12 +317,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { patientApi } from '@/api'
-import type { AuthorizationRequest } from '@/types/medicalData'
-import { maskName, maskIdCard } from '@/utils/privacy'
+import type { AuthorizationRequest, FileCategory } from '@/types/medicalData'
+import { MEDICAL_DATA_TYPE_MAP } from '@/types/medicalData'
+import { maskName, maskIdCard, displayByUnlockStatus } from '@/utils/privacy'
 
 // 响应式数据
 const loading = ref(false)
@@ -307,6 +332,8 @@ const approveDialogVisible = ref(false)
 const rejectDialogVisible = ref(false)
 const selectedRequest = ref<AuthorizationRequest | null>(null)
 const submitting = ref(false)
+
+// 视图模式控制
 
 // 筛选条件
 const filters = ref({
@@ -342,6 +369,9 @@ const rejectRules: FormRules = {
 
 // 请求列表
 const requestList = ref<AuthorizationRequest[]>([])
+
+// 分组展开状态
+const expandedGroups = ref<Set<string>>(new Set())
 
 // 加载授权请求列表
 const loadRequests = async () => {
@@ -392,6 +422,81 @@ const filteredRequests = computed(() => {
   return result
 })
 
+// 总数据数量统计
+const totalDataCount = computed(() => {
+  const dataIds = new Set(requestList.value.map(req => req.dataId))
+  return dataIds.size
+})
+
+// 按数据分组的请求
+const groupedRequests = computed(() => {
+  const groups = new Map<string, {
+    dataId: string
+    dataName: string
+    dataType: string
+    requests: AuthorizationRequest[]
+    pendingCount: number
+    approvedCount: number
+    rejectedCount: number
+    expanded: boolean
+  }>()
+
+  // 对过滤后的请求进行分组
+  filteredRequests.value.forEach(request => {
+    const key = request.dataId
+    if (!groups.has(key)) {
+      groups.set(key, {
+        dataId: request.dataId,
+        dataName: request.dataName,
+        dataType: request.dataType,
+        requests: [],
+        pendingCount: 0,
+        approvedCount: 0,
+        rejectedCount: 0,
+        expanded: expandedGroups.value.has(key)
+      })
+    }
+    
+    const group = groups.get(key)!
+    group.requests.push(request)
+    
+    // 统计各状态数量
+    switch (request.status) {
+      case 'pending':
+        group.pendingCount++
+        break
+      case 'approved':
+        group.approvedCount++
+        break
+      case 'rejected':
+        group.rejectedCount++
+        break
+    }
+  })
+
+  // 为每个数据组计算最近一次操作时间
+  const groupsWithLatestTime = Array.from(groups.values()).map(group => {
+    // 找到该组中最近的操作时间
+    const latestTime = group.requests
+      .map(request => {
+        // 优先使用处理时间，没有则使用申请时间
+        const timeStr = request.processedAt || request.requestedAt
+        return new Date(timeStr).getTime()
+      })
+      .reduce((latest, current) => Math.max(latest, current), 0)
+    
+    return {
+      ...group,
+      latestOperationTime: latestTime
+    }
+  })
+  
+  // 按最近操作时间排序，越近的越靠前
+  return groupsWithLatestTime.sort((a, b) => {
+    return b.latestOperationTime - a.latestOperationTime
+  })
+})
+
 // 获取状态类型
 const getStatusType = (status: string) => {
   switch (status) {
@@ -414,20 +519,12 @@ const getStatusText = (status: string) => {
 
 // 获取显示的医生姓名（脱敏/真实）
 const getDisplayName = (request: AuthorizationRequest): string => {
-  if (request.isIdentityRevealed) {
-    return request.doctorName
-  } else {
-    return maskName(request.doctorName)
-  }
+  return displayByUnlockStatus(request.doctorName, request.isIdentityRevealed)
 }
 
 // 获取显示的医生身份证号（脱敏/真实）
 const getDisplayIdCard = (request: AuthorizationRequest): string => {
-  if (request.isIdentityRevealed) {
-    return request.doctorIdCard
-  } else {
-    return maskIdCard(request.doctorIdCard)
-  }
+  return displayByUnlockStatus(request.doctorIdCard, request.isIdentityRevealed)
 }
 
 // 判断是否可以进行身份溯源
@@ -491,11 +588,11 @@ const confirmApprove = async () => {
     
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    ElMessage.success('已同意授权申请')
+    ElMessage.success('已同意授权申请并支付诊费')
     approveDialogVisible.value = false
     
     // 更新列表中的状态
-    const index = requestList.value.findIndex(r => r.id === selectedRequest.value.id)
+    const index = requestList.value.findIndex(r => r.id === selectedRequest.value?.id)
     if (index !== -1) {
       requestList.value[index].status = 'approved'
       requestList.value[index].processedAt = new Date().toLocaleString('zh-CN')
@@ -584,14 +681,146 @@ const revealIdentity = async (request: AuthorizationRequest) => {
 }
 
 
-// 分页处理
-const handleSizeChange = async (size: number) => {
-  pagination.value.size = size
+// 获取数据类型标签
+const getDataTypeLabel = (dataType: string): string => {
+  return MEDICAL_DATA_TYPE_MAP[dataType as FileCategory] || dataType || '未知类型'
 }
 
-const handleCurrentChange = async (current: number) => {
-  pagination.value.current = current
+// 使用目的映射表
+const PURPOSE_MAP: Record<string, string> = {
+  'diagnosis': '诊断治疗',
+  'evaluation': '病情评估', 
+  'research': '医学研究',
+  'consultation': '会诊咨询',
+  'other': '其他',
+  '诊断治疗': '诊断治疗',
+  '病情评估': '病情评估',
+  '医学研究': '医学研究', 
+  '会诊咨询': '会诊咨询',
+  '其他': '其他',
+  // 添加更多可能的格式
+  'treatment': '诊断治疗',
+  'assess': '病情评估',
+  'study': '医学研究',
+  'consult': '会诊咨询'
 }
+
+
+
+// 格式化详情对话框时间 - 年月日时分秒一行显示
+const formatDetailDateTime = (dateString: string): string => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    const dateStr = date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\//g, '-')
+    
+    const timeStr = date.toLocaleTimeString('zh-CN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    
+    return `${dateStr} ${timeStr}`
+  } catch (error) {
+    return '-'
+  }
+}
+
+// 从申请理由中提取使用目的并转换为中文
+const getRequestPurpose = (reason: string, directPurpose?: string): string => {
+  // 优先使用直接的purpose字段
+  if (directPurpose) {
+    return PURPOSE_MAP[directPurpose] || directPurpose
+  }
+  
+  if (!reason) {
+    console.log('使用目的解析: reason为空')
+    return '-'
+  }
+  
+  // 调试信息
+  console.log('使用目的解析 - reason内容:', reason)
+  
+  // 匹配使用目的行 - 支持多种格式
+  const purposeMatch = reason.match(/使用目的[：:]\s*([^\n\r]+)/)
+  if (!purposeMatch) {
+    // 尝试匹配换行符分隔的格式
+    const lines = reason.split('\n')
+    console.log('使用目的解析 - 按行分割:', lines)
+    
+    for (const line of lines) {
+      if (line.includes('使用目的')) {
+        const match = line.match(/使用目的[：:]\s*(.+)/)
+        if (match) {
+          const purpose = match[1].trim()
+          console.log('使用目的解析 - 找到目的:', purpose)
+          return PURPOSE_MAP[purpose] || purpose || '-'
+        }
+      }
+    }
+    console.log('使用目的解析 - 未找到匹配')
+    return '-'
+  }
+  
+  const purpose = purposeMatch[1].trim()
+  console.log('使用目的解析 - 直接匹配到目的:', purpose)
+  return PURPOSE_MAP[purpose] || purpose || '-'
+}
+
+// 从申请理由中提取纯理由部分（去掉使用目的行）
+const getRequestReasonOnly = (reason: string): string => {
+  if (!reason) return '-'
+  
+  // 移除使用目的行，只保留理由内容
+  // 使用更宽泛的正则表达式来匹配中文内容
+  return reason
+    .replace(/\n?使用目的[：:]\s*[^\n\r]*\n?/g, '')  // 移除换行中的使用目的行
+    .replace(/^\s*使用目的[：:]\s*[^\n\r]*/g, '')   // 移除开头的使用目的
+    .replace(/使用目的[：:]\s*[^\n\r]*/g, '')       // 移除任何位置的使用目的
+    .trim() || '-'
+}
+
+// 分组展开/收起切换
+const toggleGroup = (dataId: string) => {
+  if (expandedGroups.value.has(dataId)) {
+    expandedGroups.value.delete(dataId)
+  } else {
+    expandedGroups.value.add(dataId)
+  }
+}
+
+// 简短时间格式化
+const formatShortDateTime = (dateString: string): string => {
+  if (!dateString) return '-'
+  try {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      })
+    } else {
+      return date.toLocaleDateString('zh-CN', {
+        month: 'short',
+        day: 'numeric'
+      })
+    }
+  } catch {
+    return '-'
+  }
+}
+
+
+
 
 // 组件挂载时初始化
 onMounted(async () => {
@@ -603,7 +832,11 @@ onMounted(async () => {
 .authorization-management {
   padding: 24px;
   background: #f5f7fa;
+  padding-bottom: 340px; /* 为操作记录面板留出空间，320px + 20px间距 */
+  box-sizing: border-box;
+  transition: padding-bottom 0.3s ease; /* 平滑过渡 */
 }
+
 
 /* 页面头部 */
 .page-header {
@@ -643,13 +876,6 @@ onMounted(async () => {
 .filter-right {
   display: flex;
   align-items: center;
-}
-
-/* 请求列表卡片 */
-.request-list-card {
-  border: none;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 /* 医生信息 */
@@ -698,6 +924,7 @@ onMounted(async () => {
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -717,12 +944,6 @@ onMounted(async () => {
   gap: 8px;
 }
 
-/* 分页 */
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 24px;
-}
 
 /* 对话框 */
 .request-detail {
@@ -767,6 +988,386 @@ onMounted(async () => {
   
   .filter-right {
     justify-content: center;
+  }
+}
+
+/* 表格样式优化 - 数据居中显示 */
+:deep(.el-table) {
+  .el-table__cell {
+    text-align: center !important;
+  }
+  
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+  }
+}
+
+.data-info, .doctor-name, .doctor-id-card, .reason-text, .purpose-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* 使用目的样式 */
+.purpose-text {
+  font-weight: 500;
+  color: #409eff;
+  font-size: 13px;
+  padding: 4px 8px;
+  background: #ecf5ff;
+  border-radius: 4px;
+  border: 1px solid #d9ecff;
+}
+
+/* 申请理由样式优化 */
+.reason-text {
+  line-height: 1.4;
+  max-width: 160px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* 统计信息卡片样式 */
+.stats-card {
+  margin-bottom: 16px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stats-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.view-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.view-subtitle {
+  font-size: 13px;
+  color: #909399;
+  font-weight: 400;
+}
+
+.stats-right {
+  display: flex;
+  align-items: center;
+}
+
+/* 分组视图样式 */
+.grouped-view-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.data-group {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.data-group:last-child {
+  border-bottom: none;
+}
+
+.group-header {
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-header:hover {
+  background-color: #f8f9fa;
+}
+
+.group-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.data-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-icon {
+  transition: transform 0.3s ease;
+  color: #909399;
+}
+
+.expand-icon.expanded {
+  transform: rotate(90deg);
+}
+
+.data-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.group-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.group-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.group-content {
+  background-color: #fafbfc;
+  border-top: 1px solid #e9ecef;
+}
+
+/* 分组表格头部 */
+.group-table-header {
+  display: flex;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  padding: 12px 20px;
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.header-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.header-doctor-name {
+  width: 120px;
+}
+
+.header-doctor-id {
+  width: 160px;
+}
+
+.header-reason {
+  flex: 1;
+  min-width: 180px;
+}
+
+.header-purpose {
+  width: 120px;
+}
+
+.header-status {
+  width: 100px;
+}
+
+.header-actions {
+  width: 280px;
+}
+
+/* 医生申请行 */
+.doctor-request-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s ease;
+}
+
+.doctor-request-item:hover {
+  background-color: #f8f9fa;
+}
+
+.doctor-request-item:last-child {
+  border-bottom: none;
+}
+
+.item-col {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.col-doctor-name {
+  width: 120px;
+}
+
+.col-doctor-id {
+  width: 160px;
+}
+
+.col-reason {
+  flex: 1;
+  min-width: 180px;
+}
+
+.col-purpose {
+  width: 120px;
+}
+
+.col-status {
+  width: 100px;
+}
+
+.col-actions {
+  width: 280px;
+}
+
+/* 内容样式 */
+.doctor-name {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.doctor-id-card {
+  font-family: monospace;
+  color: #606266;
+  font-size: 13px;
+}
+
+.reason-text {
+  color: #606266;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  text-align: left;
+  width: 100%;
+}
+
+.purpose-text {
+  font-weight: 500;
+  color: #409eff;
+  font-size: 13px;
+  padding: 4px 8px;
+  background: #ecf5ff;
+  border-radius: 4px;
+  border: 1px solid #d9ecff;
+}
+
+/* 操作按钮样式 */
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+}
+
+/* 响应式设计 - 移动端调整操作记录面板间距 */
+@media (max-width: 768px) {
+  .authorization-management {
+    padding: 16px;
+    padding-bottom: 300px; /* 为移动端操作记录面板留出空间，280px + 20px间距 */
+  }
+  
+  .stats-row {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .group-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .group-actions {
+    justify-content: center;
+  }
+  
+  .group-table-header {
+    display: none; /* 移动端隐藏表头 */
+  }
+  
+  .doctor-request-item {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    padding: 16px;
+    border-radius: 8px;
+    margin: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .item-col {
+    width: auto !important;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 4px 0;
+  }
+  
+  .col-reason .reason-text {
+    text-align: left;
+    -webkit-line-clamp: 3; /* 移动端允许更多行 */
+    line-clamp: 3;
+  }
+  
+  .col-purpose {
+    justify-content: flex-start;
+  }
+  
+  .col-status {
+    justify-content: flex-start;
+  }
+  
+  .col-actions {
+    justify-content: center;
+  }
+  
+  /* 移动端添加标签前缀 */
+  .item-col::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #909399;
+    font-size: 12px;
+    margin-right: 8px;
+    min-width: 80px;
+  }
+  
+  .col-actions::before {
+    display: none;
   }
 }
 </style>

@@ -6,7 +6,7 @@
     
     <!-- 底部版权信息 -->
     <div class="footer">
-      <p class="copyright">© 2025 高效隐私保护的时空接触追溯系统</p>
+      <p class="copyright">© 2025 面向Web3.0医疗数据可溯源共享系统</p>
     </div>
   </div>
 </template>

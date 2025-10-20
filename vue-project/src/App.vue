@@ -3,7 +3,7 @@
     <!-- 添加加载状态提示 -->
     <div v-if="isLoading" class="loading-screen">
       <div class="loading-content">
-        <h2>🏥 高效隐私保护的时空接触追溯系统</h2>
+        <h2>🏥 面向Web3.0医疗数据可溯源共享系统</h2>
         <p>系统加载中，请稍候...</p>
       </div>
     </div>

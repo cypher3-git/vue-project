@@ -2,7 +2,7 @@
   <el-container class="app-layout">
     <el-header class="app-header" height="64px">
       <div class="header-left">
-        <h1 class="app-title">医联可信·数据溯源系统</h1>
+        <h1 class="app-title">面向Web3.0医疗数据可溯源共享系统</h1>
       </div>
       <div class="header-right">
         <!-- 患者科室切换按钮 -->
@@ -94,6 +94,16 @@
       </el-main>
     </el-container>
     
+    <!-- 固定底部操作记录日志 -->
+    <div 
+      class="operation-log-panel"
+      v-if="userStore.isAuthenticated"
+    >
+      <div class="panel-content">
+        <OperationLogComponent :user-role="userStore.user?.role || 'all'" />
+      </div>
+    </div>
+    
     <!-- 科室管理弹窗 -->
     <DepartmentDialog 
       v-model:visible="showDepartmentDialog"
@@ -110,13 +120,13 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { 
-  ArrowDown, 
   FolderOpened, 
   Share, 
   View,
   OfficeBuilding
 } from '@element-plus/icons-vue'
 import DepartmentDialog from '@/components/DepartmentDialog.vue'
+import OperationLogComponent from '@/components/OperationLogComponent.vue'
 
 const router = useRouter()
 const userStore = useAuthStore()
@@ -179,7 +189,7 @@ const handleCommand = (command: string) => {
       break
     case 'logout':
       userStore.logout()
-      router.push('/auth/login')
+      router.push('/')
       break
   }
 }
@@ -199,6 +209,7 @@ const handleRegisterDepartment = async (departmentName: string) => {
     // 不关闭弹窗，让用户可以继续选择刚注册的科室
   }
 }
+
 </script>
 
 <style scoped>
@@ -244,7 +255,12 @@ const handleRegisterDepartment = async (departmentName: string) => {
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  z-index: 10;
+  z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
 }
 
 .header-left .app-title {
@@ -347,6 +363,11 @@ const handleRegisterDepartment = async (departmentName: string) => {
   background: #2c3e50;
   overflow: hidden;
   box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  position: fixed;
+  top: 64px; /* header高度 */
+  bottom: 0;
+  left: 0;
+  z-index: 10;
 }
 
 .sidebar-menu {
@@ -358,11 +379,47 @@ const handleRegisterDepartment = async (departmentName: string) => {
 .app-main {
   background: #f8fafc;
   padding: 0;
+  margin-left: 240px; /* 为固定的侧边栏留出空间 */
+  margin-top: 64px; /* 为固定的header留出空间 */
 }
 
 .main-content {
   padding: 24px;
-  min-height: calc(100vh - 64px);
+  min-height: calc(100vh - 64px - 320px); /* 减去header和操作记录面板的高度 */
+  padding-bottom: 340px; /* 为操作记录面板留出空间，320px + 20px间距 */
+  box-sizing: border-box;
+  transition: padding-bottom 0.3s ease; /* 平滑过渡 */
+}
+
+
+/* 操作记录面板样式 */
+.operation-log-panel {
+  position: fixed;
+  bottom: 0;
+  left: 240px; /* 与sidebar宽度一致 */
+  right: 0;
+  height: 320px;
+  z-index: 5;
+  transition: all 0.3s ease;
+  background: white;
+  border-top: 1px solid #e6e8eb;
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
+}
+
+
+/* 面板内容 */
+.panel-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* 当侧边栏收起时调整位置 */
+.app-layout:has(.sidebar-menu.is-collapse) .operation-log-panel {
+  left: 64px; /* 收起后的sidebar宽度 */
 }
 
 /* 中老年用户友好设计 */
@@ -401,5 +458,35 @@ const handleRegisterDepartment = async (departmentName: string) => {
 :deep(.el-menu-item:hover),
 :deep(.el-sub-menu__title:hover) {
   cursor: pointer;
+}
+
+/* 响应式设计 - 移动端调整操作记录面板 */
+@media (max-width: 768px) {
+  .app-header {
+    position: fixed;
+    z-index: 100;
+  }
+  
+  .app-sidebar {
+    position: fixed;
+    left: -240px; /* 移动端默认隐藏侧边栏 */
+    z-index: 50;
+  }
+  
+  .app-main {
+    margin-left: 0; /* 移动端不需要左边距 */
+    margin-top: 64px;
+  }
+  
+  .operation-log-panel {
+    left: 0;
+    height: 280px;
+  }
+  
+  .main-content {
+    min-height: calc(100vh - 64px - 280px);
+    padding: 16px;
+    padding-bottom: 300px; /* 为移动端操作记录面板留出空间，280px + 20px间距 */
+  }
 }
 </style>

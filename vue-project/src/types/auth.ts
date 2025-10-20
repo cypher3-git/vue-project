@@ -142,7 +142,8 @@ export interface ApiResponse<T = any> {
 
 // 分页数据
 export interface PaginatedData<T> {
-  items: T[]            // 当前页数据列表
+  items: T[]            // 当前页数据列表（兼容字段）
+  files?: T[]           // 文件列表（用于医疗文件）
   total: number         // 总记录数
   page: number          // 当前页码（从1开始）
   pageSize: number      // 每页记录数

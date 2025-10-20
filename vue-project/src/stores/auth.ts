@@ -35,15 +35,33 @@ export const useAuthStore = defineStore('auth', () => {
   const initUser = async (): Promise<void> => {
     if (token.value && !user.value) {
       try {
-        const response = await authApi.getCurrentUser()
-        if (response.success && response.data) {
-          user.value = response.data
-          // 如果是患者，加载科室列表
+        // 先尝试从 localStorage 获取用户信息
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+          user.value = JSON.parse(userStr)
+          // 如果是患者，设置科室信息
           if (user.value.role === 'patient') {
-            await loadDepartments()
+            // 如果用户对象中有 departments，直接使用（演示账户）
+            if ((user.value as PatientUser).departments) {
+              departments.value = (user.value as PatientUser).departments
+            } else {
+              // 否则从 API 加载
+              await loadDepartments()
+            }
           }
         } else {
-          logout()
+          // 如果 localStorage 没有，则从 API 获取
+          const response = await authApi.getCurrentUser()
+          if (response.success && response.data) {
+            user.value = response.data
+            localStorage.setItem('user', JSON.stringify(response.data))
+            // 如果是患者，加载科室列表
+            if (user.value.role === 'patient') {
+              await loadDepartments()
+            }
+          } else {
+            logout()
+          }
         }
       } catch (error) {
         // token无效，清除本地存储
@@ -74,12 +92,19 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = response.data.token
         user.value = response.data.user
         
-        // 保存token到localStorage
+        // 保存token和用户信息到localStorage（重要：mockBackend需要从这里获取用户）
         localStorage.setItem('token', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
         
-        // 如果是患者，加载科室列表
+        // 如果是患者，设置科室信息
         if (user.value.role === 'patient') {
-          await loadDepartments()
+          // 如果用户对象中有 departments，直接使用
+          if ((user.value as PatientUser).departments) {
+            departments.value = (user.value as PatientUser).departments
+          } else {
+            // 否则从 API 加载
+            await loadDepartments()
+          }
         }
         
         ElMessage.success('登录成功！')
@@ -130,7 +155,10 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     departments.value = []
+    
+    // 清除 localStorage（包括 user 和 token）
     localStorage.removeItem('token')
+    localStorage.removeItem('user')
     
     ElMessage.success('已安全退出')
   }

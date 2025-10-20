@@ -9,8 +9,7 @@
               <DataAnalysis />
             </el-icon>
           </div>
-          <h1 class="brand-title">追溯系统</h1>
-          <p class="brand-subtitle">高效隐私保护的时空接触追溯系统</p>
+          <h1 class="brand-subtitle">面向Web3.0医疗数据可溯源共享系统</h1>
         </div>
         
         <div class="brand-features">
@@ -20,11 +19,11 @@
           </div>
           <div class="feature-item">
             <el-icon size="24" color="#ffffff"><Link /></el-icon>
-            <span>接触追溯</span>
+            <span>身份追溯</span>
           </div>
           <div class="feature-item">
             <el-icon size="24" color="#ffffff"><TrendCharts /></el-icon>
-            <span>数据分析</span>
+            <span>数据共享</span>
           </div>
         </div>
       </div>
@@ -37,7 +36,7 @@
         
         <!-- 底部版权信息 -->
         <div class="auth-footer">
-          <p class="copyright">© 2025 高效隐私保护的时空接触追溯系统</p>
+          <p class="copyright">© 2025 面向Web3.0医疗数据可溯源共享系统</p>
         </div>
       </div>
     </div>
@@ -102,7 +101,7 @@ import LoginView from '@/views/auth/LoginView.vue'
 }
 
 .brand-subtitle {
-  font-size: 18px;
+  font-size: 30px;
   margin: 0;
   opacity: 0.9;
   line-height: 1.6;
@@ -117,6 +116,7 @@ import LoginView from '@/views/auth/LoginView.vue'
 .feature-item {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   font-size: 16px;
   opacity: 0.9;

@@ -6,8 +6,11 @@
 import request from '@/utils/request'
 import type {
   FileQueryParams,
-  FileListResponse
+  FileListResponse,
+  UploadData,
+  MedicalFile
 } from '@/types/medicalData'
+import type { ApiResponse } from '@/types/auth'
 
 // ==================== 已使用的API（1个）====================
 
@@ -123,7 +126,50 @@ export const getMedicalFiles = async (params?: FileQueryParams): Promise<FileLis
   return request.get('/medical-data/files', { params })
 }
 
+/**
+ * ✅ 上传医疗文件
+ * 
+ * @description 患者上传医疗数据文件
+ * 
+ * @param uploadData - 上传数据
+ * @param uploadData.file - 文件对象
+ * @param uploadData.title - 文件标题
+ * @param uploadData.description - 文件描述
+ * @param uploadData.category - 文件类别
+ * 
+ * @returns Promise<ApiResponse<MedicalFile>> - 上传结果
+ * 
+ * @example
+ * const response = await uploadMedicalFile({
+ *   file: fileObject,
+ *   title: '血常规检查报告',
+ *   description: '2024年体检血常规',
+ *   category: 'lab-report'
+ * })
+ */
+export const uploadMedicalFile = async (uploadData: UploadData): Promise<ApiResponse<MedicalFile>> => {
+  return request.post('/medical-data/files/upload', uploadData)
+}
+
+/**
+ * ✅ 删除医疗文件
+ * 
+ * @description 患者删除自己的医疗数据文件
+ * 
+ * @param fileId - 文件ID
+ * 
+ * @returns Promise<ApiResponse<void>> - 删除结果
+ * 
+ * @example
+ * const response = await deleteMedicalFile('file_123')
+ */
+export const deleteMedicalFile = async (fileId: string): Promise<ApiResponse<void>> => {
+  return request.delete(`/medical-data/files/${fileId}`)
+}
+
 // 导出所有API函数作为默认对象
 export default {
-  getMedicalFiles
+  getMedicalFiles,
+  uploadMedicalFile,
+  deleteMedicalFile
 }
